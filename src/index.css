@@ -1,0 +1,292 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --border: 0 0% 89.8%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+  }
+
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 6%;
+    --card-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+  }
+}
+
+body {
+  background-color: #f8f3eb;
+  color: #080331;
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom Scrollbar for sleek aesthetic */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(75, 68, 57, 0.2);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(75, 68, 57, 0.4);
+}
+
+/* ── Exact August Health Hero Orbit Wheel & Spiral Animation ── */
+.home-hero_background-image-wrapper {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.home-hero_background {
+  --item-count: 8;
+  width: var(--circle-size);
+  height: var(--circle-size);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  animation: hero-orbit-cw 200s linear infinite;
+  will-change: transform;
+}
+
+@media screen and (min-width: 0px) {
+  .home-hero_background {
+    --circle-size: 960px;
+    --item-size: 220px;
+  }
+}
+
+@media screen and (min-width: 480px) {
+  .home-hero_background {
+    --circle-size: 1140px;
+    --item-size: 280px;
+  }
+}
+
+@media screen and (min-width: 768px) {
+  .home-hero_background {
+    --circle-size: 1390px;
+    --item-size: 360px;
+  }
+}
+
+@media screen and (min-width: 1024px) {
+  .home-hero_background {
+    --circle-size: 1820px;
+    --item-size: 468px;
+  }
+}
+
+@keyframes hero-orbit-cw {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+.home-hero_background-image {
+  display: block;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--item-size);
+  height: var(--item-size);
+  margin: calc(var(--item-size) / -2);
+  --rotation: calc(var(--i) * (360deg / var(--item-count)));
+  --translation: calc(var(--circle-size) / 2 - var(--item-size) / 2);
+  transform:
+    rotate(var(--rotation))
+    translate(var(--translation))
+    rotate(calc(var(--rotation) * -1));
+  border-radius: 50%;
+  user-select: none;
+  pointer-events: none;
+}
+
+.home-hero_background-image:nth-child(1) { --i: 1; }
+.home-hero_background-image:nth-child(2) { --i: 2; }
+.home-hero_background-image:nth-child(3) { --i: 3; }
+.home-hero_background-image:nth-child(4) { --i: 4; }
+.home-hero_background-image:nth-child(5) { --i: 5; }
+.home-hero_background-image:nth-child(6) { --i: 6; }
+.home-hero_background-image:nth-child(7) { --i: 7; }
+.home-hero_background-image:nth-child(8) { --i: 8; }
+
+/* Counter-rotation keeps each bubble upright during orbit */
+.home-hero_counter-rotate {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  animation: hero-counter-orbit 200s linear infinite;
+  will-change: transform;
+}
+
+@keyframes hero-counter-orbit {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(-360deg);
+  }
+}
+
+/* ── August Health Values Section & Animated Multi-Color Border ── */
+.values_section {
+  background-color: #1b1463;
+  position: relative;
+}
+
+.values_row {
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 3rem;
+  position: relative;
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+@media (max-width: 768px) {
+  .values_row {
+    border-radius: 1.75rem;
+  }
+}
+
+.animated-border {
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  width: calc(100% + 4px);
+  height: calc(100% + 4px);
+  pointer-events: none;
+}
+
+/* Animated active stroke drawing following August Health timing */
+.animated-path-green {
+  stroke-dasharray: 1192;
+  animation: drawGreenPath 9s ease-in-out infinite;
+}
+
+.animated-path-orange {
+  stroke-dasharray: 1192;
+  animation: drawOrangePath 9s ease-in-out infinite;
+}
+
+.animated-path-pink {
+  stroke-dasharray: 372;
+  animation: drawPinkPath 9s ease-in-out infinite;
+}
+
+@keyframes drawGreenPath {
+  0% { stroke-dashoffset: 1192; }
+  32% { stroke-dashoffset: 0; }
+  85% { stroke-dashoffset: 0; }
+  98% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: 1192; }
+}
+
+@keyframes drawOrangePath {
+  0%, 28% { stroke-dashoffset: 1192; }
+  60% { stroke-dashoffset: 0; }
+  85% { stroke-dashoffset: 0; }
+  98% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: 1192; }
+}
+
+@keyframes drawPinkPath {
+  0%, 56% { stroke-dashoffset: 372; }
+  76% { stroke-dashoffset: 0; }
+  85% { stroke-dashoffset: 0; }
+  98% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: 372; }
+}
+
+/* Hide scrollbar for clean horizontal carousel */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ── Voice Hero Wave & Soundwave Frequency Animations (Inspiration Reference) ── */
+@keyframes voiceWaveBar {
+  0%, 100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1.15);
+  }
+}
+
+.animate-soundwave-1 {
+  animation: voiceWaveBar 1.2s ease-in-out infinite;
+}
+.animate-soundwave-2 {
+  animation: voiceWaveBar 0.85s ease-in-out infinite 0.15s;
+}
+.animate-soundwave-3 {
+  animation: voiceWaveBar 1.4s ease-in-out infinite 0.3s;
+}
+.animate-soundwave-4 {
+  animation: voiceWaveBar 0.95s ease-in-out infinite 0.45s;
+}
+.animate-soundwave-5 {
+  animation: voiceWaveBar 1.1s ease-in-out infinite 0.2s;
+}
+
+@keyframes orbGlowPulse {
+  0%, 100% {
+    box-shadow: 0 0 25px 4px rgba(192, 132, 252, 0.3), 0 12px 36px -6px rgba(168, 85, 247, 0.35);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 45px 10px rgba(192, 132, 252, 0.5), 0 16px 48px -4px rgba(168, 85, 247, 0.55);
+    transform: scale(1.03);
+  }
+}
+
+.animate-orb-glow {
+  animation: orbGlowPulse 3.5s ease-in-out infinite;
+}
+
+@keyframes ribbonDrift {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-10px) scale(1.02);
+  }
+}
+
+.animate-ribbon-drift {
+  animation: ribbonDrift 4s ease-in-out infinite;
+}
+
+
