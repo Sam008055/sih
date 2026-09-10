@@ -13,7 +13,7 @@ export default function ChatBotView() {
     {
       id: 'c1',
       sender: 'bot',
-      text: 'Namaste! I am your Ayush Clinical AI Assistant. I have analyzed your uploaded records regarding your Diabetic Foot Ulcer (Wagner Grade 2) and glycemic lab markers. How can I assist with your dressings, diet (Ahara), or medicines today?',
+      text: 'Namaste! I am your Ayush Clinical AI Assistant. I can help explain the records available in this portal. What would you like to understand today?',
       timestamp: 'Just now'
     }
   ]);
@@ -28,7 +28,7 @@ export default function ChatBotView() {
     'What foods should I avoid for high Vata?'
   ];
 
-  const handleSend = (userText: string) => {
+  const handleSend = async (userText: string) => {
     if (!userText.trim()) return;
 
     const userMsg: ChatMessage = {
@@ -38,41 +38,50 @@ export default function ChatBotView() {
       timestamp: 'Just now'
     };
 
-    setMessages((prev) => [...prev, userMsg]);
+    const nextMessages = [...messages, userMsg];
+    setMessages(nextMessages);
     setInput('');
     setIsTyping(true);
 
-    setTimeout(() => {
-      let botResponse = '';
-      const lower = userText.toLowerCase();
-
-      if (lower.includes('wagner') || lower.includes('ulcer') || lower.includes('grade')) {
-        botResponse =
-          'A Wagner Grade 2 Diabetic Foot Ulcer involves deep tissue penetration down to tendon, bone, or joint capsule without osteomyelitis or localized gangrene. Because diabetic autonomic denervation causes anhidrosis (dryness) and high peak plantar pressure, off-loading footwear is mandatory to allow the ulcer bed to heal without repeated traumatic shearing.';
-      } else if (lower.includes('jatyadi') || lower.includes('dress') || lower.includes('apply')) {
-        botResponse =
-          'Standard Ayush Vrana Ropana protocol: First, cleanse the wound gently with lukewarm Panchavalkala Kashaya to remove biofilm without cytotoxicity. Pat dry with sterile gauze. Then apply sterile Jatyadi Taila / Ghrita soaked gauze directly on the ulcer base. Cover with a secondary sterile pad. Change dressing once daily or if strike-through occurs.';
-      } else if (lower.includes('metformin') || lower.includes('vijaysar') || lower.includes('together')) {
-        botResponse =
-          'Yes, Metformin and Vijaysar (Pterocarpus marsupium) have synergistic glucose-lowering mechanisms without adverse pharmacological antagonism. Vijaysar helps regenerate pancreatic beta cells and improve peripheral glucose disposal. Monitor fasting blood sugar every 72 hours and inform Dr. Vaidya Ananya Sharma during your Bay 04 consultation.';
-      } else if (lower.includes('food') || lower.includes('diet') || lower.includes('vata')) {
-        botResponse =
-          'For your aggravated Vata state: Favor warm, unctuous (Snigdha), easily digestible foods like Moong Dal Khichdi cooked with a pinch of Ginger, Cumin, and Ghee. Strictly avoid cold, dry, excessively pungent (Katu), and sour fermented items which aggravate Pitta inflammation in the wound.';
-      } else {
-        botResponse =
-          'I have recorded this inquiry into your digital health dossier. Your presiding physician, Dr. Vaidya Ananya Sharma at OPD Bay 04, will address this directly during your scheduled clinical session. Would you like me to bookmark this question for the doctor?';
+    try {
+      const response = await fetch('/api/groq-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: nextMessages.map((message) => ({
+            role: message.sender === 'user' ? 'user' : 'assistant',
+            content: message.text,
+          })),
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.reply) {
+        throw new Error(data.error || 'Groq assistant is unavailable');
       }
 
-      const reply: ChatMessage = {
-        id: `b-${Date.now()}`,
-        sender: 'bot',
-        text: botResponse,
-        timestamp: 'Just now'
-      };
-
-      setMessages((prev) => [...prev, reply]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `b-${Date.now()}`,
+          sender: 'bot',
+          text: data.reply,
+          timestamp: 'Just now',
+        },
+      ]);
+    } catch (error) {
+      console.warn('Groq assistant request failed:', error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `b-${Date.now()}`,
+          sender: 'bot',
+          text: 'The clinical assistant is temporarily unavailable. Please try again in a moment or speak with your care team.',
+          timestamp: 'Just now',
+        },
+      ]);
+    } finally {
       setIsTyping(false);
-    }, 1200);
+    }
   };
 
   return (
@@ -142,7 +151,7 @@ export default function ChatBotView() {
         {isTyping && (
           <div className="flex items-center gap-2 p-3 bg-white border border-[#4d4439]/10 rounded-2xl max-w-xs text-xs text-stone-500">
             <Sparkles size={14} className="text-[#4865ff] animate-spin" />
-            <span>Consulting Ayurvedic &amp; Clinical Knowledge Base...</span>
+            <span>Consulting the clinical assistant...</span>
           </div>
         )}
       </div>

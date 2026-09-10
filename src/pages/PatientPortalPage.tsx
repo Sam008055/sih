@@ -48,6 +48,7 @@ import AppointmentsView from '../components/patient/AppointmentsView';
 import AIInsightsView from '../components/patient/AIInsightsView';
 import MessagesView from '../components/patient/MessagesView';
 import ChatBotView from '../components/patient/ChatBotView';
+import XrayAnalysisPanel from '../components/patient/XrayAnalysisPanel';
 
 export default function PatientPortalPage() {
   const { user, signOut, loginAsDemoPatient } = useAuth();
@@ -153,8 +154,8 @@ export default function PatientPortalPage() {
               summary:
                 lab.patient_summary ||
                 lab.doctor_report ||
-                `Prescription digitized via Med-Gemma OCR. Primary condition: ${s.diagnosis_found || 'Clinical Intake'}.`,
-              risk_score: lab.risk_score || 35,
+                `Prescription digitized via Sarvam OCR. Primary condition: ${s.diagnosis_found || 'Clinical Intake'}.`,
+               risk_score: lab.risk_score ?? s.ocr_confidence ?? 0,
               conditions: [
                 ...(s.diagnosis_found &&
                 !s.diagnosis_found.toLowerCase().includes('not provided') &&
@@ -163,7 +164,7 @@ export default function PatientPortalPage() {
                   ? [s.diagnosis_found]
                   : ['Clinical Intake']),
                 'InsForge Stored',
-                'Med-Gemma OCR Analyzed'
+                'Sarvam OCR Analyzed'
               ],
               specialist:
                 s.prescribing_doctor &&
@@ -171,7 +172,7 @@ export default function PatientPortalPage() {
                 !s.prescribing_doctor.toLowerCase().includes('unknown') &&
                 s.prescribing_doctor.toLowerCase() !== 'none'
                   ? s.prescribing_doctor
-                  : 'Dr. Vaidya Ananya Sharma, MD (Ayu) · Bay 04',
+                   : 'Prescribing clinician not provided',
               urgency: (lab.urgency as any) || 'medium',
               record_hash: `0x${(s.id || '').replace(/[^a-f0-9]/gi, '').substring(0, 8) || 'verified'}`,
               created_at: s.created_at
@@ -183,9 +184,9 @@ export default function PatientPortalPage() {
                 : 'Recent',
               medications: extMeds.map((m: any) => ({
                 name: m.name,
-                dosage: m.dosage || 'Standard dose',
-                frequency: m.frequency || 'OD',
-                instructions: m.instructions || 'Follow clinical guidance'
+                 dosage: m.dosage || 'Not provided',
+                 frequency: m.frequency || 'Not provided',
+                 instructions: m.instructions || 'Not provided'
               })),
               allergies: s.detected_allergies || [],
               blocks: lab.ocr_blocks || [],
@@ -242,7 +243,7 @@ export default function PatientPortalPage() {
     return () => window.removeEventListener('ayush_prescription_added', loadLiveRecords);
   }, []);
 
-  // Handle File Upload & OCR Extraction via Med-Gemma + InsForge Backend
+  // Handle File Upload & OCR Extraction via Sarvam + InsForge Backend
   const handleFileUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     const file = files[0];
@@ -251,15 +252,15 @@ export default function PatientPortalPage() {
     setUploadStage('Uploading document to InsForge Storage...');
     showToast(`Uploading "${file.name}" to InsForge Storage...`);
 
-    const stageTimer1 = setTimeout(() => setUploadStage('Digitizing with Med-Gemma Vision OCR...'), 1200);
-    const stageTimer2 = setTimeout(() => setUploadStage('Generating report with Med-Gemma Reasoning...'), 7000);
+    const stageTimer1 = setTimeout(() => setUploadStage('Digitizing with Sarvam Vision OCR...'), 1200);
+    const stageTimer2 = setTimeout(() => setUploadStage('Generating report with Sarvam Clinical Extraction...'), 7000);
 
     try {
-      // 1. Process through Sarvam Doc-AI backend + Med-Gemma intelligence + InsForge Storage
+      // 1. Process through Sarvam Doc-AI + Sarvam clinical extraction + InsForge Storage
       const result = await processPrescriptionWithSarvamAndInsForge(
         file,
         user?.id || 'patient-demo',
-        mySession?.id || '430537e7-7814-449d-a5b6-5e1cbfbf5346'
+        mySession?.id
       );
 
       clearTimeout(stageTimer1);
@@ -274,8 +275,8 @@ export default function PatientPortalPage() {
         summary:
           ext.patient_summary ||
           ext.doctor_report ||
-          `Prescription digitized from ${file.name} via Med-Gemma.`,
-        risk_score: ext.risk_score || 35,
+          `Prescription digitized from ${file.name} via Sarvam OCR.`,
+         risk_score: ext.risk_score ?? 0,
         conditions: [
           ...(ext.diagnosis_found &&
           !ext.diagnosis_found.toLowerCase().includes('not provided') &&
@@ -284,7 +285,7 @@ export default function PatientPortalPage() {
             ? [ext.diagnosis_found]
             : ['Clinical Intake']),
           'InsForge Stored',
-          'Med-Gemma OCR Analyzed'
+          'Sarvam OCR Analyzed'
         ],
         specialist:
           ext.prescribing_doctor &&
@@ -292,7 +293,7 @@ export default function PatientPortalPage() {
           !ext.prescribing_doctor.toLowerCase().includes('unknown') &&
           ext.prescribing_doctor.toLowerCase() !== 'none'
             ? ext.prescribing_doctor
-            : 'Dr. Vaidya Ananya Sharma, MD (Ayu) · Bay 04',
+             : 'Prescribing clinician not provided',
         urgency:
           ext.urgency === 'emergency'
             ? 'critical'
@@ -304,9 +305,9 @@ export default function PatientPortalPage() {
         medications:
           ext.extracted_medications?.map((m: any) => ({
             name: m.name,
-            dosage: m.dosage || 'Standard dose',
-            frequency: m.frequency || 'OD',
-            instructions: m.instructions || 'As advised by clinician'
+             dosage: m.dosage || 'Not provided',
+             frequency: m.frequency || 'Not provided',
+             instructions: m.instructions || 'Not provided'
           })) || [],
         allergies: ext.detected_allergies || [],
         blocks: result.blocks || [],
@@ -346,7 +347,7 @@ export default function PatientPortalPage() {
         })
       );
 
-      showToast(`Prescription "${cleanFileName}" digitized via Med-Gemma! Inspecting original & scanned...`);
+      showToast(`Prescription "${cleanFileName}" digitized via Sarvam OCR! Inspecting original & scanned...`);
     } catch (err: any) {
       console.error('File upload & OCR error:', err);
       showToast(`OCR processing error: ${err?.message || 'Failed to digitize file'}`);
@@ -405,7 +406,7 @@ export default function PatientPortalPage() {
   // ── Patient Login Gate: Patient must first login to access portal and trigger intake mode ──
   if (!user || !isPatientSessionActive) {
     return (
-      <div className="min-h-screen bg-[#EDF0F8] text-slate-800 font-sans flex flex-col justify-between p-4 sm:p-8">
+      <div className="patient-entry min-h-screen bg-[#EDF0F8] text-slate-800 font-sans flex flex-col justify-between p-4 sm:p-8">
         {/* Top Branding Bar */}
         <header className="max-w-4xl w-full mx-auto flex items-center justify-between py-2">
           <Link to="/" className="flex items-center gap-3 group">
@@ -538,7 +539,7 @@ export default function PatientPortalPage() {
   }
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-[#EDF0F8] text-slate-800 font-sans antialiased flex selection:bg-black selection:text-white">
+    <div className="clinical-workspace clinical-workspace--patient h-screen w-screen overflow-hidden bg-[#EDF0F8] text-slate-800 font-sans antialiased flex selection:bg-black selection:text-white">
       
       {/* Toast Notification */}
       {toastMessage && (
@@ -866,7 +867,7 @@ export default function PatientPortalPage() {
                       </span>
                     </div>
                     <span className="text-[10px] font-bold bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-full uppercase">
-                      {t('patient.medGemmaOcr', 'Med-Gemma OCR')}
+                      {t('patient.medGemmaOcr', 'Sarvam OCR')}
                     </span>
                   </div>
 
@@ -881,7 +882,7 @@ export default function PatientPortalPage() {
                       </div>
                       <div className="text-left min-w-0 flex-1">
                         <div className="text-xs font-semibold text-slate-800 group-hover:text-black whitespace-nowrap">
-                          {isUploading ? 'Digitizing with Med-Gemma...' : 'Upload Prescription'}
+                          {isUploading ? 'Digitizing with Sarvam...' : 'Upload Prescription'}
                         </div>
                         <div className="text-[10px] text-slate-400 truncate">
                           PDF, JPG, PNG (Max 25MB)
@@ -899,10 +900,10 @@ export default function PatientPortalPage() {
                       <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin shrink-0" />
                       <div className="overflow-hidden">
                         <div className="text-xs font-semibold text-blue-900 truncate">
-                          {uploadStage || 'Digitizing with Med-Gemma AI...'}
+                          {uploadStage || 'Digitizing with Sarvam AI...'}
                         </div>
                         <div className="text-[10px] text-blue-600">
-                          InsForge S3 • Med-Gemma Vision OCR • Clinical Intelligence
+                          InsForge Storage • Sarvam Vision OCR • Clinical Extraction
                         </div>
                       </div>
                     </div>
@@ -915,7 +916,7 @@ export default function PatientPortalPage() {
                         <FileText size={26} className="mx-auto mb-2 text-slate-300" />
                         <p className="text-xs font-semibold text-slate-700">No Prescriptions Yet</p>
                         <p className="text-[11px] text-slate-400 mt-0.5">
-                          Upload a doctor slip or clinical report to inspect with live Med-Gemma OCR.
+                          Upload a doctor slip or clinical report to inspect with live Sarvam OCR.
                         </p>
                       </div>
                     ) : (
@@ -1034,8 +1035,11 @@ export default function PatientPortalPage() {
 
           {/* ═══ TAB 4: AI PROGNOSIS ═══ */}
           {activeTab === 'ai-prognosis' && (
-            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-sm animate-fade-in">
-              <AIInsightsView />
+            <div className="space-y-6 animate-fade-in">
+              <XrayAnalysisPanel patientName={user?.name || 'the patient'} />
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-sm">
+                <AIInsightsView />
+              </div>
             </div>
           )}
 

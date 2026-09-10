@@ -423,7 +423,7 @@ export default function KioskIntakeModal({
                 <div className="bg-[#fdf2f7] border border-[#f098d7]/30 rounded-2xl p-4 text-[#080331]">
                   <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#328a3b] bg-emerald-50 px-2.5 py-0.5 rounded-full mb-2">
                     <Check size={11} />
-                    <span>MED-GEMMA VISION OCR (98.4% CONFIDENCE)</span>
+                    <span>SARVAM VISION OCR</span>
                   </span>
                   <div className="text-xs space-y-1">
                     <p className="font-semibold text-[#080331]">Past Prescriptions Extracted:</p>

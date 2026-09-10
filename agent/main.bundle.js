@@ -42,10 +42,11 @@ function createMediKioskAgent() {
       5. Ask about his fasting sugar check and confirm he is wearing offloading footwear without walking barefoot.
       Once he shares this information, call the 'generateDoctorPrescriptionReport' tool to file the intake report with Dr. Vaidya Ananya Sharma at Bay 04.
 
-      # Spoken Voice Rules (Ultra-Low Latency & High Warmth):
+      # Spoken Voice Rules (Ultra-Low Latency, Multilingual & High Warmth):
       - Keep every response SHORT: 1 to 2 sentences maximum! Never speak long paragraphs.
       - Ask only ONE clinical question at a time.
-      - Speak in plain, warm, conversational Hindi, Hinglish, or English matching the patient's language.
+      - Speak in plain, warm, natural conversational Kannada (ಕನ್ನಡ), Hindi (हिन्दी), or English matching the patient's spoken language. If the patient speaks Kannada, reply in Kannada. If Hindi, reply in Hindi. If English, reply in English.
+      - Adaptive Clinical Pacing: For acute symptoms or urgent alerts, communicate concisely and briskly. For medication dosages and Triphala/Jatyadi dressing steps, speak with extra clarity.
       - Never use markdown, asterisks (*), hashtags (#), bullet points, tables, code, or emojis in your speech output.
       - Reassure the patient warmly that Dr. Vaidya Ananya Sharma is monitoring his progress at Bay 04.
       - If he reports sudden severe pain, fever, spreading redness, or foul pus, immediately advise him that an emergency alert is triggered for Bay 04.
@@ -159,7 +160,13 @@ dotenv.config({ path: ".env" });
 var sarvamApiKey = process.env.SARVAM_API_KEY || "sk_k78xw4hw_AIq2FZ8NytX15FVxcXIdVHcU";
 var main_default = defineAgent({
   entry: async (ctx) => {
-    const vad = await silero.VAD.load();
+    const vad = await silero.VAD.load({
+      activationThreshold: 0.6,
+      // Prevents steady ambient noise from falsely sustaining speech
+      minSilenceDuration: 450,
+      // Milliseconds of silence to close speech chunk
+      prefixPaddingDuration: 300
+    });
     const sarvamLLM = new OpenAILLM2({
       model: "sarvam-105b-conversations",
       baseURL: "https://api.sarvam.ai/v1",
@@ -172,11 +179,12 @@ var main_default = defineAgent({
         model: "saaras:v3",
         languageCode: "unknown"
       }),
-      // Text to Speech: Sarvam Bulbul v3 with natural expressive Indic voice
+      // Text to Speech: Sarvam Bulbul v3 with natural expressive Indic female voice (kavya)
       tts: new sarvam.TTS({
         apiKey: sarvamApiKey,
         model: "bulbul:v3",
-        speaker: "priya"
+        speaker: "kavya",
+        pace: 1.15
       }),
       // LLM Reasoning: Sarvam 105B
       llm: sarvamLLM,
@@ -186,8 +194,10 @@ var main_default = defineAgent({
         interruption: { mode: "adaptive" },
         preemptiveGeneration: { enabled: true },
         endpointing: {
-          minDelay: 0.35,
-          maxDelay: 1.2
+          minDelay: 500,
+          // Milliseconds: wait 500ms of silence before declaring turn complete
+          maxDelay: 2500
+          // Milliseconds: maximum wait ceiling
         }
       }
     });
@@ -202,17 +212,20 @@ var main_default = defineAgent({
     );
   }
 });
-cli.runApp(
-  new ServerOptions({
-    agent: fileURLToPath(import.meta.url),
-    agentName: "medikiosk-voice-agent",
-    wsURL: process.env.LIVEKIT_URL,
-    apiKey: process.env.LIVEKIT_API_KEY,
-    apiSecret: process.env.LIVEKIT_API_SECRET,
-    numIdleProcesses: 1,
-    initializeProcessTimeout: 60 * 1e3
-  })
-);
+var isMain = process.argv[1] && (process.argv[1] === fileURLToPath(import.meta.url) || import.meta.url.endsWith(process.argv[1].replace(/\\/g, "/")));
+if (isMain) {
+  cli.runApp(
+    new ServerOptions({
+      agent: fileURLToPath(import.meta.url),
+      agentName: "medikiosk-voice-agent",
+      wsURL: process.env.LIVEKIT_URL,
+      apiKey: process.env.LIVEKIT_API_KEY,
+      apiSecret: process.env.LIVEKIT_API_SECRET,
+      numIdleProcesses: 1,
+      initializeProcessTimeout: 60 * 1e3
+    })
+  );
+}
 export {
   main_default as default
 };

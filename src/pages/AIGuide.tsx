@@ -27,28 +27,20 @@ export default function AIGuide() {
     setIsLoading(true);
 
     try {
-      // Connect to Sarvam Indic chat completion endpoint
-      const res = await fetch('https://api.sarvam.ai/v1/chat/completions', {
+      // Keep the Groq key on the local server instead of exposing it in the browser.
+      const res = await fetch('/api/groq-chat', {
         method: 'POST',
-        headers: {
-          'api-subscription-key': 'sk_k78xw4hw_AIq2FZ8NytX15FVxcXIdVHcU',
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'sarvam-105b-conversations',
-          messages: [
-            {
-              role: 'system',
-              content: 'You are an expressive, knowledgeable AI Heritage Guide for Odisha and Indian cultural heritage (Konark Sun Temple, Puri Jagannath Temple, Lingaraj Temple, Dhauli). Be concise, respectful, and engaging.'
-            },
-            ...messages.map(m => ({ role: m.role, content: m.content })),
-            { role: 'user', content: promptText }
-          ]
-        })
+          message: promptText,
+          messages: messages.map(m => ({ role: m.role, content: m.content })),
+          systemPrompt: 'You are an expressive, knowledgeable AI Heritage Guide for Odisha and Indian cultural heritage (Konark Sun Temple, Puri Jagannath Temple, Lingaraj Temple, Dhauli). Be concise, respectful, and engaging. Do not invent facts; clearly say when you are uncertain.'
+        }),
       });
 
       const data = await res.json();
-      const reply = data.choices?.[0]?.message?.content?.trim() || 'Could not retrieve response from Sarvam AI.';
+      if (!res.ok) throw new Error(data.error || `Groq API HTTP error: ${res.status}`);
+      const reply = data.reply?.trim() || 'Could not retrieve a response from the Groq assistant.';
       setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
     } catch (err) {
       console.error(err);
@@ -68,7 +60,7 @@ export default function AIGuide() {
           </div>
           <div>
             <h1 className="text-xl font-bold tracking-tight">AI Heritage Guide</h1>
-            <p className="text-xs text-indigo-400 font-medium tracking-wide uppercase">Sarvam 105B Indic + LiveKit Voice</p>
+            <p className="text-xs text-indigo-400 font-medium tracking-wide uppercase">Groq GPT-OSS 20B + LiveKit Voice</p>
           </div>
         </div>
 

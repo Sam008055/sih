@@ -634,7 +634,7 @@ export default function DigitalTwin({ analysisData, recordId }: DigitalTwinProps
         </div>
 
         {/* Layer Peel Controls */}
-        <div className="absolute bottom-3 left-3 z-20 flex flex-col gap-1.5">
+        <div className="digital-twin-layer-controls absolute top-16 left-3 z-20 flex flex-col gap-1.5">
           <button
             onClick={peelLayer}
             disabled={currentLayerIndex >= LAYER_ORDER.length}

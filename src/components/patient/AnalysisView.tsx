@@ -70,7 +70,7 @@ export default function AnalysisView({ record, onOpenComparison }: AnalysisViewP
   // Sanitize doctor/specialist name so raw placeholders like "Not provided in the document" don't appear
   const displaySpecialist = (() => {
     const s = record.specialist?.trim();
-    if (!s) return 'Dr. Vaidya Ananya Sharma, MD (Ayu) · Bay 04';
+    if (!s) return 'Prescribing clinician not provided';
     const lower = s.toLowerCase();
     if (
       lower.includes('not provided') ||
@@ -78,7 +78,7 @@ export default function AnalysisView({ record, onOpenComparison }: AnalysisViewP
       lower === 'none' ||
       lower === 'n/a'
     ) {
-      return 'Dr. Vaidya Ananya Sharma, MD (Ayu) · Bay 04';
+      return 'Prescribing clinician not provided';
     }
     return s;
   })();
@@ -166,10 +166,10 @@ export default function AnalysisView({ record, onOpenComparison }: AnalysisViewP
               <button
                 onClick={onOpenComparison}
                 className="px-4 py-2 rounded-full bg-black hover:bg-slate-800 text-white shadow-xs transition-all cursor-pointer flex items-center gap-1.5 text-xs font-semibold"
-                title="Inspect Original Document and Scanned OCR side-by-side with Med-Gemma"
+                title="Inspect Original Document and Scanned OCR side-by-side with Sarvam"
               >
                 <Sparkles size={13} className="text-yellow-400" />
-                <span>Side-by-Side Med-Gemma Inspector</span>
+                <span>Side-by-Side Sarvam OCR Inspector</span>
               </button>
             )}
             {record.file_url && (
@@ -297,7 +297,7 @@ export default function AnalysisView({ record, onOpenComparison }: AnalysisViewP
         <div className="flex items-center gap-2">
           <Sparkles size={16} className="text-blue-600" />
           <h3 className="font-bold text-slate-900 text-sm">
-            Med-Gemma Clinical Anamnesis Report
+            Sarvam Clinical Anamnesis Report
           </h3>
         </div>
         <p className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line bg-slate-50/70 p-4.5 rounded-2xl border border-slate-200/60">

@@ -289,4 +289,572 @@ body {
   animation: ribbonDrift 4s ease-in-out infinite;
 }
 
+/* ── AyushKiosk homepage visual system ──────────────────────────────
+   Scoped to the marketing homepage so product routes keep their current
+   visual and functional behavior. This is intentionally a token-level
+   pass: the existing information architecture and interactions remain.
+*/
+.ayush-home {
+  --home-ivory: #f6f0e7;
+  --home-paper: #fffdf8;
+  --home-ink: #2b2925;
+  --home-rust: #bd684b;
+  --home-sage: #7f9881;
+  --home-ochre: #bd9958;
+  --home-line: rgba(43, 41, 37, 0.14);
+  background: var(--home-ivory) !important;
+  color: var(--home-ink) !important;
+}
+
+.ayush-home .home-nav-shell {
+  padding-top: 10px;
+}
+
+.ayush-home .home-nav {
+  min-height: 50px;
+  width: fit-content !important;
+  max-width: calc(100vw - 32px) !important;
+  padding: 6px 18px !important;
+  gap: 24px;
+  justify-content: flex-start !important;
+  flex: 0 0 auto;
+  border-radius: 18px !important;
+  background: rgba(255, 253, 248, 0.94) !important;
+  border-color: var(--home-line) !important;
+  box-shadow: 0 12px 30px rgba(43, 41, 37, 0.08), 0 2px 8px rgba(43, 41, 37, 0.04) !important;
+}
+
+.ayush-home .home-nav > a:first-child {
+  gap: 8px;
+  margin-right: 0;
+}
+
+.ayush-home .home-nav > a:first-child #logo-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.ayush-home .home-nav > a:first-child > span {
+  font-size: 21px !important;
+}
+
+.ayush-home .home-nav > div {
+  gap: 14px;
+}
+
+.ayush-home #logo-icon path {
+  fill: var(--home-rust) !important;
+}
+
+/* Translate the former high-saturation utility palette into the warm system. */
+.ayush-home [class*="bg-[#4865ff]"],
+.ayush-home [class*="bg-[#4865FF]"],
+.ayush-home [class*="bg-[#328a3b]"],
+.ayush-home [class*="bg-[#328A3B]"] {
+  background-color: var(--home-sage) !important;
+}
+
+.ayush-home [class*="bg-[#080331]"],
+.ayush-home [class*="bg-[#1b1463]"],
+.ayush-home [class*="bg-[#1B1463]"] {
+  background-color: var(--home-ink) !important;
+}
+
+.ayush-home [class*="bg-[#ff6d39]"],
+.ayush-home [class*="bg-[#FF6D39]"] {
+  background-color: var(--home-rust) !important;
+}
+
+.ayush-home [class*="bg-[#f098d7]"],
+.ayush-home [class*="bg-[#F098D7]"] {
+  background-color: #e8c5ac !important;
+}
+
+.ayush-home [class*="text-[#4865ff]"],
+.ayush-home [class*="text-[#4865FF]"],
+.ayush-home [class*="text-[#328a3b]"],
+.ayush-home [class*="text-[#328A3B]"] {
+  color: var(--home-sage) !important;
+}
+
+.ayush-home [class*="text-[#080331]"],
+.ayush-home [class*="text-[#1b1463]"],
+.ayush-home [class*="text-[#1B1463]"] {
+  color: var(--home-ink) !important;
+}
+
+.ayush-home [class*="border-[#4865ff]"],
+.ayush-home [class*="border-[#4865FF]"],
+.ayush-home [class*="border-[#328a3b]"],
+.ayush-home [class*="border-[#328A3B]"] {
+  border-color: var(--home-sage) !important;
+}
+
+.ayush-home .home-hero {
+  background: var(--home-ivory) !important;
+}
+
+.ayush-home .home-hero_background,
+.ayush-home .home-hero_counter-rotate {
+  animation-duration: 280s;
+}
+
+.ayush-home .home-hero_background-image:nth-child(2) .home-hero_counter-rotate,
+.ayush-home .home-hero_background-image:nth-child(6) .home-hero_counter-rotate {
+  background: var(--home-sage) !important;
+  box-shadow: 0 20px 50px rgba(127, 152, 129, 0.28) !important;
+}
+
+.ayush-home .home-hero_background-image:nth-child(4) .home-hero_counter-rotate,
+.ayush-home .home-hero_background-image:nth-child(8) .home-hero_counter-rotate {
+  border-color: var(--home-ochre) !important;
+  background: var(--home-ochre) !important;
+  box-shadow: 0 20px 50px rgba(189, 153, 88, 0.28) !important;
+}
+
+.ayush-home .home-hero-primary {
+  background: var(--home-rust) !important;
+  box-shadow: 0 12px 24px rgba(189, 104, 75, 0.25) !important;
+}
+
+.ayush-home .home-hero-primary:hover {
+  background: #a9573d !important;
+}
+
+.ayush-home .home-hero-secondary {
+  background: var(--home-ink) !important;
+}
+
+.ayush-home .home-platform {
+  background: var(--home-paper) !important;
+}
+
+.ayush-home .home-platform .grid > div {
+  background: rgba(246, 240, 231, 0.78) !important;
+  border-color: var(--home-line) !important;
+  box-shadow: 0 16px 32px rgba(43, 41, 37, 0.06) !important;
+}
+
+.ayush-home .home-platform .grid > div:nth-child(2) {
+  background: rgba(232, 197, 172, 0.34) !important;
+}
+
+.ayush-home .home-platform .grid > div:nth-child(3) {
+  background: rgba(127, 152, 129, 0.18) !important;
+}
+
+.ayush-home .home-platform .grid > div:nth-child(4) {
+  background: rgba(189, 153, 88, 0.16) !important;
+}
+
+.ayush-home .home-values {
+  background: #34322d !important;
+}
+
+.ayush-home .home-values .values_row {
+  border-radius: 28px;
+  background: rgba(255, 253, 248, 0.035);
+}
+
+.ayush-home .home-values [class*="bg-[#328a3b]"],
+.ayush-home .home-values [class*="bg-[#328A3B]"] {
+  background: var(--home-sage) !important;
+}
+
+.ayush-home .home-values [class*="bg-[#FF6D39]"],
+.ayush-home .home-values [class*="bg-[#ff6d39]"] {
+  background: var(--home-rust) !important;
+}
+
+.ayush-home .home-values [class*="bg-[#F098D7]"],
+.ayush-home .home-values [class*="bg-[#f098d7]"] {
+  background: #e8c5ac !important;
+}
+
+.ayush-home .home-values .animated-border path {
+  stroke: var(--home-ochre) !important;
+  stroke-opacity: 0.6;
+}
+
+.ayush-home .home-impact {
+  background: var(--home-ivory) !important;
+}
+
+.ayush-home .home-impact .layout364_bg-image {
+  opacity: 0.12;
+  filter: sepia(0.35) saturate(0.6);
+}
+
+.ayush-home .home-impact .flex.gap-6 > div {
+  border-radius: 22px;
+  box-shadow: 0 18px 34px rgba(43, 41, 37, 0.1) !important;
+}
+
+.ayush-home .home-impact [class*="bg-[#114e0b]"] {
+  background: #526e56 !important;
+}
+
+.ayush-home .home-floating-actions {
+  bottom: 18px;
+  right: 18px;
+}
+
+.ayush-home .home-floating-actions button {
+  border-color: var(--home-line) !important;
+}
+
+.ayush-home .home-floating-actions button:first-child > div:first-child {
+  background: var(--home-sage) !important;
+  box-shadow: 0 6px 16px rgba(127, 152, 129, 0.3) !important;
+}
+
+.ayush-home .home-floating-actions button:last-child {
+  background: var(--home-ink) !important;
+}
+
+.ayush-home .home-floating-actions button:last-child > div:first-child {
+  background: var(--home-rust) !important;
+  box-shadow: 0 6px 16px rgba(189, 104, 75, 0.3) !important;
+}
+
+/* Quick access dock: one composed control instead of two competing pills. */
+.ayush-home .home-quick-dock {
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid rgba(43, 41, 37, 0.12);
+  border-radius: 22px;
+  background: rgba(255, 253, 248, 0.88);
+  box-shadow: 0 18px 42px rgba(43, 41, 37, 0.18), 0 3px 10px rgba(43, 41, 37, 0.08);
+  backdrop-filter: blur(16px);
+}
+
+.ayush-home .home-quick-action {
+  min-height: 52px;
+  border: 0 !important;
+  border-radius: 16px !important;
+  padding: 6px 14px 6px 8px !important;
+  gap: 10px !important;
+  box-shadow: none !important;
+  transform: none;
+}
+
+.ayush-home .home-quick-action--touch {
+  background: transparent !important;
+  color: var(--home-ink) !important;
+}
+
+.ayush-home .home-quick-action--touch:hover {
+  background: rgba(127, 152, 129, 0.16) !important;
+  transform: translateY(-1px);
+}
+
+.ayush-home .home-quick-action--voice {
+  background: var(--home-ink) !important;
+  color: var(--home-paper) !important;
+}
+
+.ayush-home .home-quick-action--voice:hover {
+  background: #45413a !important;
+  transform: translateY(-1px);
+}
+
+.ayush-home .home-quick-action__icon {
+  width: 38px !important;
+  height: 38px !important;
+  flex: 0 0 38px;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+}
+
+.ayush-home .home-quick-action--touch .home-quick-action__icon {
+  background: var(--home-sage) !important;
+}
+
+.ayush-home .home-quick-action--voice .home-quick-action__icon {
+  background: var(--home-rust) !important;
+}
+
+.ayush-home .home-quick-action__copy {
+  min-width: 0;
+  line-height: 1.15;
+}
+
+.ayush-home .home-quick-action__copy > div:first-child {
+  background: transparent !important;
+  color: inherit !important;
+  white-space: nowrap;
+}
+
+.ayush-home .home-quick-action__copy > div:last-child {
+  margin-top: 3px;
+  color: currentColor !important;
+  opacity: 0.54;
+  white-space: nowrap;
+}
+
+.ayush-home .home-quick-action__status {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  background: var(--home-rust) !important;
+}
+
+.ayush-home .home-quick-action--voice .home-quick-action__status {
+  background: #9fc4a4 !important;
+}
+
+@media (max-width: 640px) {
+  .ayush-home .home-nav-shell {
+    padding-top: 6px;
+  }
+
+  .ayush-home .home-nav {
+    min-height: 46px;
+    width: calc(100vw - 24px) !important;
+    padding: 5px 12px !important;
+    gap: 10px;
+    justify-content: space-between !important;
+    border-radius: 14px !important;
+  }
+
+  .ayush-home .home-nav > a:first-child {
+    gap: 6px;
+  }
+
+  .ayush-home .home-nav > a:first-child #logo-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .ayush-home .home-nav > a:first-child > span {
+    font-size: 19px !important;
+  }
+
+  .ayush-home .home-floating-actions {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    justify-content: center;
+  }
+
+  .ayush-home .home-quick-dock {
+    width: calc(100% - 24px);
+  }
+
+  .ayush-home .home-quick-action {
+    flex: 1 1 0;
+    min-width: 0;
+    padding-right: 10px !important;
+  }
+
+  .ayush-home .home-quick-action__copy > div:last-child {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ayush-home .home-hero_background,
+  .ayush-home .home-hero_counter-rotate,
+  .ayush-home .animated-border path {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* ── Product workspace visual system ────────────────────────────────
+   Shared shell treatment for clinician, patient, and anatomy routes.
+   These selectors only restyle existing markup; route, data, and state
+   behavior remain owned by the page components.
+*/
+.clinical-workspace,
+.human-workspace {
+  --workspace-ivory: #f4efe7;
+  --workspace-paper: #fffdf8;
+  --workspace-ink: #2b2925;
+  --workspace-sage: #7f9881;
+  --workspace-rust: #bd684b;
+  --workspace-line: rgba(43, 41, 37, 0.13);
+}
+
+.clinical-workspace {
+  background: var(--workspace-ivory) !important;
+  color: var(--workspace-ink) !important;
+}
+
+.clinical-workspace aside {
+  background: #eee8df !important;
+  border-color: var(--workspace-line) !important;
+}
+
+.clinical-workspace > .flex-1,
+.clinical-workspace main {
+  background: var(--workspace-ivory) !important;
+}
+
+.clinical-workspace header {
+  background: rgba(255, 253, 248, 0.9) !important;
+  border-color: var(--workspace-line) !important;
+}
+
+.clinical-workspace input,
+.clinical-workspace textarea,
+.clinical-workspace select {
+  background: var(--workspace-paper) !important;
+  border-color: var(--workspace-line) !important;
+  color: var(--workspace-ink) !important;
+}
+
+.clinical-workspace .bg-white {
+  background: var(--workspace-paper) !important;
+}
+
+.clinical-workspace [class*="bg-[#EDF0F8]"] {
+  background: var(--workspace-ivory) !important;
+}
+
+.clinical-workspace [class*="bg-black"],
+.clinical-workspace [class*="bg-slate-900"] {
+  background: var(--workspace-ink) !important;
+}
+
+.clinical-workspace [class*="bg-blue-600"],
+.clinical-workspace [class*="bg-blue-700"],
+.clinical-workspace [class*="bg-indigo-600"],
+.clinical-workspace [class*="bg-indigo-700"] {
+  background: var(--workspace-rust) !important;
+}
+
+.clinical-workspace [class*="bg-blue-50"],
+.clinical-workspace [class*="bg-indigo-50"] {
+  background: rgba(127, 152, 129, 0.18) !important;
+}
+
+.clinical-workspace [class*="text-blue-600"],
+.clinical-workspace [class*="text-blue-700"],
+.clinical-workspace [class*="text-indigo-500"],
+.clinical-workspace [class*="text-indigo-600"] {
+  color: var(--workspace-sage) !important;
+}
+
+.clinical-workspace [class*="border-slate-"],
+.clinical-workspace [class*="border-blue-"] {
+  border-color: var(--workspace-line) !important;
+}
+
+.clinical-workspace .rounded-2xl,
+.clinical-workspace .rounded-3xl {
+  box-shadow: 0 10px 24px rgba(43, 41, 37, 0.045);
+}
+
+.human-workspace {
+  min-height: 100vh;
+  background: var(--workspace-ivory) !important;
+  color: var(--workspace-ink) !important;
+}
+
+.human-workspace header {
+  background: rgba(255, 253, 248, 0.92) !important;
+  border-color: var(--workspace-line) !important;
+  box-shadow: 0 8px 24px rgba(43, 41, 37, 0.05);
+}
+
+.human-workspace main {
+  max-width: 1180px;
+}
+
+.human-workspace .grid > div {
+  background: rgba(255, 253, 248, 0.82) !important;
+  border-color: var(--workspace-line) !important;
+  box-shadow: 0 14px 28px rgba(43, 41, 37, 0.06) !important;
+}
+
+.human-workspace [class*="bg-[#4865ff]"],
+.human-workspace [class*="bg-[#4865FF]"] {
+  background: var(--workspace-sage) !important;
+}
+
+.human-workspace [class*="text-[#4865ff]"],
+.human-workspace [class*="text-[#4865FF]"] {
+  color: var(--workspace-sage) !important;
+}
+
+.human-workspace [class*="bg-[#080331]"],
+.human-workspace [class*="bg-[#1b1463]"] {
+  background: var(--workspace-ink) !important;
+}
+
+.human-workspace [class*="text-[#080331]"],
+.human-workspace [class*="text-[#1b1463]"] {
+  color: var(--workspace-ink) !important;
+}
+
+.patient-entry {
+  --entry-ivory: #f4efe7;
+  --entry-paper: #fffdf8;
+  --entry-ink: #2b2925;
+  --entry-sage: #7f9881;
+  --entry-rust: #bd684b;
+  background: var(--entry-ivory) !important;
+  color: var(--entry-ink) !important;
+}
+
+.patient-entry header {
+  background: transparent !important;
+}
+
+.patient-entry header [class*="bg-[#080331]"] {
+  background: var(--entry-rust) !important;
+}
+
+.patient-entry [class*="text-[#4865ff]"],
+.patient-entry [class*="text-blue-"] {
+  color: var(--entry-sage) !important;
+}
+
+.patient-entry [class*="bg-blue-50"],
+.patient-entry [class*="bg-[#dce4fb]"] {
+  background: rgba(127, 152, 129, 0.16) !important;
+}
+
+.patient-entry [class*="from-blue-50"] {
+  background-image: linear-gradient(135deg, rgba(127, 152, 129, 0.13), rgba(232, 197, 172, 0.28)) !important;
+}
+
+.patient-entry [class*="bg-blue-100"] {
+  background: rgba(127, 152, 129, 0.2) !important;
+}
+
+.patient-entry [class*="bg-[#4865ff]"],
+.patient-entry [class*="bg-blue-600"],
+.patient-entry [class*="bg-blue-500"] {
+  background: var(--entry-rust) !important;
+}
+
+.patient-entry [class*="bg-[#080331]"],
+.patient-entry [class*="bg-slate-900"] {
+  background: var(--entry-ink) !important;
+}
+
+.patient-entry > div.max-w-md {
+  background: rgba(255, 253, 248, 0.92) !important;
+  border-color: rgba(43, 41, 37, 0.12) !important;
+  box-shadow: 0 24px 60px rgba(43, 41, 37, 0.1) !important;
+}
+
+.patient-entry input {
+  background: var(--entry-paper) !important;
+  border-color: rgba(43, 41, 37, 0.14) !important;
+  color: var(--entry-ink) !important;
+}
+
+@media (max-width: 1024px) {
+  .clinical-workspace {
+    min-height: 100dvh;
+  }
+
+  .clinical-workspace main {
+    padding-bottom: 24px;
+  }
+}
+
 

@@ -76,13 +76,13 @@ export default function AyushKioskHome() {
 
 
   return (
-    <div className="min-h-screen bg-[#f8f3eb] text-[#080331] font-sans selection:bg-[#4865ff]/20 selection:text-[#080331] overflow-x-hidden antialiased">
+    <div className="ayush-home min-h-screen bg-[#f8f3eb] text-[#080331] font-sans selection:bg-[#4865ff]/20 selection:text-[#080331] overflow-x-hidden antialiased">
       
       {/* ──────────────────────────────────────────────────────────
           1. STICKY PILL NAVIGATION BAR (Exact August Health Replica)
           ────────────────────────────────────────────────────────── */}
-      <div className="w-full pt-3 sm:pt-4 px-2 sm:px-4 lg:px-6 fixed top-0 left-0 right-0 z-50 pointer-events-none flex justify-center">
-        <nav className="max-w-[1400px] w-full bg-white/95 backdrop-blur-xl rounded-full px-4 sm:px-6 lg:px-7 py-2 sm:py-2.5 flex items-center justify-between pointer-events-auto border border-black/5 shadow-[0_12px_32px_rgba(75,68,57,0.06),0_2px_8px_rgba(0,0,0,0.04)]">
+      <div className="home-nav-shell w-full pt-3 sm:pt-4 px-2 sm:px-4 lg:px-6 fixed top-0 left-0 right-0 z-50 pointer-events-none flex justify-center">
+        <nav className="home-nav max-w-[1400px] w-full bg-white/95 backdrop-blur-xl rounded-full px-4 sm:px-6 lg:px-7 py-2 sm:py-2.5 flex items-center justify-between pointer-events-auto border border-black/5 shadow-[0_12px_32px_rgba(75,68,57,0.06),0_2px_8px_rgba(0,0,0,0.04)]">
           
           {/* Logo Brand (Exact August 8-Dot Starburst + AyushKiosk Serif) */}
           <a href="#" className="flex items-center gap-2.5 group cursor-pointer shrink-0 mr-4 lg:mr-6">
@@ -138,8 +138,9 @@ export default function AyushKioskHome() {
               </svg>
             </a>
 
-            {/* Ayush Intelligence (Visible on 2xl screens) */}
-            <a href="#intelligence" className="hidden 2xl:inline-flex items-center gap-1.5 group cursor-pointer">
+            {/* Ayush Intelligence is intentionally not exposed in the homepage navbar. */}
+            {false && (
+            <a href="#intelligence" className="hidden">
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
                 width="15" 
@@ -171,17 +172,20 @@ export default function AyushKioskHome() {
                 Ayush Intelligence
               </span>
             </a>
+            )}
 
-            {/* 3D Human Anatomy Viewer Trigger (Visible on 2xl screens) */}
+            {/* 3D Human Anatomy Viewer is intentionally not exposed in the homepage navbar. */}
+            {false && (
             <button
               onClick={() => setIs3DViewerOpen(true)}
-              className="hidden 2xl:inline-flex items-center gap-1.5 hover:text-[#4865FF] transition-colors cursor-pointer group"
+              className="hidden"
             >
               <span>3D Human</span>
               <span className="text-[10px] bg-[#4865ff]/10 group-hover:bg-[#4865ff] group-hover:text-white text-[#4865ff] font-bold px-1.5 py-0.5 rounded-full transition-colors">
                 WebGL
               </span>
             </button>
+            )}
           </div>
 
           {/* Right Actions: Language Selector, Doctor Login/Patient Portal, Try Kiosk */}
@@ -266,7 +270,7 @@ export default function AyushKioskHome() {
       {/* ──────────────────────────────────────────────────────────
           2. HERO SECTION WITH CIRCLING ORBIT & FLATTENING CURVE
           ────────────────────────────────────────────────────────── */}
-      <header className="relative overflow-hidden bg-[#f8f3eb] min-h-[720px] sm:min-h-[780px] flex flex-col justify-between pt-36 sm:pt-44">
+      <header className="home-hero relative overflow-hidden bg-[#f8f3eb] min-h-[720px] sm:min-h-[780px] flex flex-col justify-between pt-36 sm:pt-44">
         
         {/* ── Exact August Health Hero Orbit Wheel & Spiral Animation ── */}
         <div className="home-hero_background-image-wrapper">
@@ -287,42 +291,18 @@ export default function AyushKioskHome() {
               </div>
             </div>
 
-            {/* Slot 2: Supports 22+ Indian Languages (August Health Royal Blue Bubble) */}
+            {/* Slot 2: Multilingual intake, shown as a photographic orbit card */}
             <div className="home-hero_background-image">
-              <div className="home-hero_counter-rotate relative w-full h-full rounded-full bg-[#4865ff] shadow-[0_20px_50px_rgba(72,101,255,0.35)] p-6 sm:p-8 flex items-center justify-center">
-                <div className="w-full bg-[#dce4fb]/95 backdrop-blur-md rounded-[26px] p-5 sm:p-6 shadow-lg text-[#080331]">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="inline-flex items-center gap-1.5 bg-[#4865ff]/15 px-2.5 py-0.5 rounded-full text-[11px] font-bold text-[#1b1463]">
-                      <span className="w-2 h-2 rounded-full bg-[#4865ff] animate-pulse"></span>
-                      <span>BHASHINI VOICE AI</span>
-                    </div>
-                    <span className="text-[11px] font-mono font-bold text-[#4865ff] bg-white px-2 py-0.5 rounded-full border border-[#4865ff]/20 shadow-xs">
-                      22+ Languages
-                    </span>
-                  </div>
-
-                  <h3 className="font-serif text-lg sm:text-2xl font-normal text-[#080331] leading-tight mb-1.5">
-                    Supports 22+ Indian Languages
-                  </h3>
-                  
-                  <p className="text-xs text-[#333333] leading-relaxed mb-3 font-sans">
-                    Patients speak freely in their mother tongue. Dialect-aware ASR captures symptoms with zero typing.
-                  </p>
-
-                  <div className="flex flex-wrap gap-1 pt-2 border-t border-[#080331]/10 font-sans">
-                    {['हिंदी', 'தமிழ்', 'తెలుగు', 'বাংলা', 'मराठी', 'ગુજરાતી', 'ಕನ್ನಡ', '+15 more'].map((lang, idx) => (
-                      <span 
-                        key={idx} 
-                        className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
-                          idx === 7 
-                            ? 'bg-[#4865ff] text-white font-bold' 
-                            : 'bg-white/90 text-[#080331] border border-[#080331]/10 shadow-xs'
-                        }`}
-                      >
-                        {lang}
-                      </span>
-                    ))}
-                  </div>
+              <div className="home-hero_counter-rotate relative w-full h-full rounded-full overflow-hidden border-[10px] sm:border-[14px] border-[#c9a15a] shadow-[0_20px_50px_rgba(142,108,45,0.3)] bg-[#c9a15a]">
+                <img
+                  src="/portrait-female-pediatrician-work-optimized.jpg"
+                  alt="Clinician listening to a patient during a multilingual intake"
+                  className="w-full h-full object-cover object-[58%_42%] scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#251f18]/55 via-transparent to-transparent"></div>
+                <div className="absolute inset-0 ring-1 ring-inset ring-black/10 rounded-full"></div>
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-[#fffaf2]/95 backdrop-blur px-3 py-1 rounded-full text-[11px] font-bold text-[#332c24] shadow border border-[#c9a15a]/30 whitespace-nowrap">
+                  Multilingual Patient Intake
                 </div>
               </div>
             </div>
@@ -372,42 +352,18 @@ export default function AyushKioskHome() {
               </div>
             </div>
 
-            {/* Slot 6: Supports 22+ Indian Languages (Repeating for smooth continuous orbit) */}
+            {/* Slot 6: Multilingual intake repeat for the continuous orbit */}
             <div className="home-hero_background-image">
-              <div className="home-hero_counter-rotate relative w-full h-full rounded-full bg-[#4865ff] shadow-[0_20px_50px_rgba(72,101,255,0.35)] p-6 sm:p-8 flex items-center justify-center">
-                <div className="w-full bg-[#dce4fb]/95 backdrop-blur-md rounded-[26px] p-5 sm:p-6 shadow-lg text-[#080331]">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="inline-flex items-center gap-1.5 bg-[#4865ff]/15 px-2.5 py-0.5 rounded-full text-[11px] font-bold text-[#1b1463]">
-                      <span className="w-2 h-2 rounded-full bg-[#4865ff] animate-pulse"></span>
-                      <span>BHASHINI VOICE AI</span>
-                    </div>
-                    <span className="text-[11px] font-mono font-bold text-[#4865ff] bg-white px-2 py-0.5 rounded-full border border-[#4865ff]/20 shadow-xs">
-                      22+ Languages
-                    </span>
-                  </div>
-
-                  <h3 className="font-serif text-lg sm:text-2xl font-normal text-[#080331] leading-tight mb-1.5">
-                    Supports 22+ Indian Languages
-                  </h3>
-                  
-                  <p className="text-xs text-[#333333] leading-relaxed mb-3 font-sans">
-                    Patients speak freely in their mother tongue. Dialect-aware ASR captures symptoms with zero typing.
-                  </p>
-
-                  <div className="flex flex-wrap gap-1 pt-2 border-t border-[#080331]/10 font-sans">
-                    {['हिंदी', 'தமிழ்', 'తెలుగు', 'বাংলা', 'मराठी', 'ગુજરાતી', 'ಕನ್ನಡ', '+15 more'].map((lang, idx) => (
-                      <span 
-                        key={idx} 
-                        className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
-                          idx === 7 
-                            ? 'bg-[#4865ff] text-white font-bold' 
-                            : 'bg-white/90 text-[#080331] border border-[#080331]/10 shadow-xs'
-                        }`}
-                      >
-                        {lang}
-                      </span>
-                    ))}
-                  </div>
+              <div className="home-hero_counter-rotate relative w-full h-full rounded-full overflow-hidden border-[10px] sm:border-[14px] border-[#8da38b] shadow-[0_20px_50px_rgba(88,112,87,0.3)] bg-[#8da38b]">
+                <img
+                  src="/indian-doctor-patient-care.jpg"
+                  alt="Doctor and patient sharing a calm bedside consultation"
+                  className="w-full h-full object-cover object-[48%_45%] scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#251f18]/55 via-transparent to-transparent"></div>
+                <div className="absolute inset-0 ring-1 ring-inset ring-black/10 rounded-full"></div>
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-[#fffaf2]/95 backdrop-blur px-3 py-1 rounded-full text-[11px] font-bold text-[#332c24] shadow border border-[#8da38b]/30 whitespace-nowrap">
+                  Speak in Your Language
                 </div>
               </div>
             </div>
@@ -473,7 +429,7 @@ export default function AyushKioskHome() {
           <div className="flex flex-wrap items-center justify-center gap-3.5 mb-10">
             <button 
               onClick={() => setIsKioskModalOpen(true)}
-              className="bg-[#4865ff] hover:bg-[#3855eb] text-white font-medium text-[15px] sm:text-[16px] px-7 sm:px-8 py-3 sm:py-3.5 rounded-full shadow-[0_12px_24px_rgba(72,101,255,0.28)] transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2 cursor-pointer"
+              className="home-hero-primary bg-[#4865ff] hover:bg-[#3855eb] text-white font-medium text-[15px] sm:text-[16px] px-7 sm:px-8 py-3 sm:py-3.5 rounded-full shadow-[0_12px_24px_rgba(72,101,255,0.28)] transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2 cursor-pointer"
             >
               <Touchpad size={18} />
               <span>{t('hero.btnTouch', 'Start Touch & Voice Kiosk')}</span>
@@ -488,7 +444,7 @@ export default function AyushKioskHome() {
             </button>
             <button 
               onClick={() => navigate('/dashboard')}
-              className="bg-[#080331] hover:bg-[#1b1463] text-white font-medium text-[15px] sm:text-[16px] px-6 sm:px-7 py-3 sm:py-3.5 rounded-full shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+              className="home-hero-secondary bg-[#080331] hover:bg-[#1b1463] text-white font-medium text-[15px] sm:text-[16px] px-6 sm:px-7 py-3 sm:py-3.5 rounded-full shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
             >
               {t('nav.doctorDashboard', 'Doctor Dashboard')}
             </button>
@@ -540,7 +496,7 @@ export default function AyushKioskHome() {
       {/* ──────────────────────────────────────────────────────────
           4. THE PLATFORM — 2x2 FEATURE CARDS (100% PS 26047 Terms)
           ────────────────────────────────────────────────────────── */}
-      <section id="platform" className="bg-white py-24 sm:py-32 px-6">
+      <section id="platform" className="home-platform bg-white py-24 sm:py-32 px-6">
         <div className="max-w-[1140px] mx-auto">
           
           {/* Section Pill Header */}
@@ -847,7 +803,7 @@ export default function AyushKioskHome() {
       {/* ──────────────────────────────────────────────────────────
           5. OUR VALUES SECTION (Exact August Health Multi-Colored Border)
           ────────────────────────────────────────────────────────── */}
-      <section id="clinical-engine" className="values_section text-white pt-24 sm:pt-32 pb-0 px-4 sm:px-6 relative overflow-hidden">
+      <section id="clinical-engine" className="home-values values_section text-white pt-24 sm:pt-32 pb-0 px-4 sm:px-6 relative overflow-hidden">
         <div className="max-w-[1140px] mx-auto">
           
           {/* Section Header */}
@@ -1037,7 +993,7 @@ export default function AyushKioskHome() {
       {/* ──────────────────────────────────────────────────────────
           6. CASE STUDIES & IMPACT SWIPER CAROUSEL (Matching media_1788539321397.png & media_1788541599921.png)
           ────────────────────────────────────────────────────────── */}
-      <section id="abdm" className="py-24 sm:py-32 px-4 sm:px-6 overflow-hidden bg-[#f8f3eb] relative">
+      <section id="abdm" className="home-impact py-24 sm:py-32 px-4 sm:px-6 overflow-hidden bg-[#f8f3eb] relative">
         
         {/* Subtle Background Dot Grid Pattern Behind Cards (Matching media_1788541599921.png) */}
         <div 
@@ -1300,19 +1256,19 @@ export default function AyushKioskHome() {
       {/* ──────────────────────────────────────────────────────────
           9. FLOATING DUAL-MODE KIOSK & VOICE AI ASSISTANT TRIGGERS
           ────────────────────────────────────────────────────────── */}
-      <div className="fixed bottom-6 right-6 z-40 flex items-center gap-2.5">
+      <div className="home-floating-actions home-quick-dock fixed bottom-6 right-6 z-40 flex items-center gap-2.5">
         {/* Touch MCQ Case-Taking Trigger */}
         <button
           onClick={() => setIsKioskModalOpen(true)}
-          className="group flex items-center gap-2.5 bg-white text-[#080331] pl-3.5 pr-4.5 py-3 rounded-full border border-slate-200 shadow-[0_12px_36px_rgba(0,0,0,0.15)] hover:shadow-[0_16px_48px_rgba(72,101,255,0.3)] hover:border-[#4865ff]/50 hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer"
+          className="home-quick-action home-quick-action--touch group flex items-center gap-2.5 bg-white text-[#080331] pl-3.5 pr-4.5 py-3 rounded-full border border-slate-200 shadow-[0_12px_36px_rgba(0,0,0,0.15)] hover:shadow-[0_16px_48px_rgba(72,101,255,0.3)] hover:border-[#4865ff]/50 hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer"
         >
-          <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-[#4865ff] text-white shadow-md shadow-[#4865ff]/30">
+          <div className="home-quick-action__icon relative flex items-center justify-center w-8 h-8 rounded-full bg-[#4865ff] text-white shadow-md shadow-[#4865ff]/30">
             <Touchpad size={16} />
           </div>
-          <div className="text-left">
+          <div className="home-quick-action__copy text-left">
             <div className="text-xs font-bold tracking-tight text-slate-900 flex items-center gap-1.5">
               {t('nav.touchCaseTaking', 'Touch Case-Taking')}
-              <span className="w-1.5 h-1.5 rounded-full bg-[#4865ff] animate-ping" />
+              <span className="home-quick-action__status w-1.5 h-1.5 rounded-full bg-[#4865ff] animate-ping" />
             </div>
             <div className="text-[10px] text-slate-500 font-medium">Adaptive MCQ + Type</div>
           </div>
@@ -1321,18 +1277,18 @@ export default function AyushKioskHome() {
         {/* LiveKit Voice Assistant Trigger */}
         <button
           onClick={() => setIsVoiceModalOpen(true)}
-          className="group flex items-center gap-3 bg-[#0d0f17] text-white pl-4 pr-5 py-3 rounded-full border border-white/20 shadow-[0_12px_36px_rgba(0,0,0,0.3)] hover:shadow-[0_16px_48px_rgba(72,101,255,0.4)] hover:border-indigo-400/50 hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer"
+          className="home-quick-action home-quick-action--voice group flex items-center gap-3 bg-[#0d0f17] text-white pl-4 pr-5 py-3 rounded-full border border-white/20 shadow-[0_12px_36px_rgba(0,0,0,0.3)] hover:shadow-[0_16px_48px_rgba(72,101,255,0.4)] hover:border-indigo-400/50 hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer"
         >
-          <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-indigo-600 group-hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/40">
+          <div className="home-quick-action__icon relative flex items-center justify-center w-8 h-8 rounded-full bg-indigo-600 group-hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/40">
             <span className="absolute inset-0 rounded-full bg-indigo-400/30 animate-ping" />
             <Mic size={16} />
           </div>
-          <div className="text-left">
+          <div className="home-quick-action__copy text-left">
             <div className="text-xs font-bold tracking-tight text-white flex items-center gap-1.5">
               AI Voice Guide
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="home-quick-action__status w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             </div>
-            <div className="text-[10px] text-white/50 font-medium">LiveKit • Med-Gemma AI</div>
+            <div className="text-[10px] text-white/50 font-medium">LiveKit • Groq GPT-OSS 20B</div>
           </div>
         </button>
       </div>

@@ -121,36 +121,30 @@ export default function SummaryDashboardView({
     }, 1800);
   };
 
-  // Connect to live Sarvam AI 105B Indic Model
+  // Route the assistant request through the local server so the Groq key never reaches the browser.
   const processVoiceQuery = async (text: string) => {
     setIsProcessingAI(true);
     setVoiceReply(null);
 
     try {
-      const res = await fetch('https://api.sarvam.ai/v1/chat/completions', {
+      const res = await fetch('/api/groq-chat', {
         method: 'POST',
-        headers: {
-          'api-subscription-key': 'sk_k78xw4hw_AIq2FZ8NytX15FVxcXIdVHcU',
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'sarvam-105b-conversations',
-          messages: [
-            {
-              role: 'system',
-              content: `You are the official Ayush Clinical AI Assistant for MediKiosk OPD Bay 04 under Dr. Vaidya Ananya Sharma. The patient is Govind, diagnosed with Wagner Grade 2 Diabetic Foot Ulcer on left plantar surface, current Fasting Blood Sugar 95 mg/dL, HbA1c 7.6%, Agni: Mandagni. The patient preferred language is ${currentLanguageOption?.name || 'Hindi'} (${currentLanguageOption?.nativeName || 'हिन्दी'}). Answer warmly, empathetically, and concisely directly in ${currentLanguageOption?.name || 'Hindi'} in 2 to 3 sentences maximum with clinical actionable guidance.`
-            },
-            { role: 'user', content: text }
-          ]
+          message: text,
+          language: currentLanguageOption?.name || 'Hindi',
+          patientName: 'Govind Kumar',
         })
       });
 
       if (!res.ok) {
-        throw new Error(`Sarvam API HTTP error: ${res.status}`);
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `Groq API HTTP error: ${res.status}`);
       }
 
       const data = await res.json();
-      const reply = data.choices?.[0]?.message?.content?.trim() || 'Aapka clinical request record ho gaya hai. Vaidya Ananya Sharma consultation ke dauran iski samiksha karengi.';
+      const reply = data.reply?.trim();
+      if (!reply) throw new Error('Groq returned an empty response');
       setVoiceReply(reply);
 
       // Speak response using SpeechSynthesis with Indic pronunciation
@@ -174,38 +168,8 @@ export default function SummaryDashboardView({
         } catch (_) {}
       }
     } catch (err) {
-      console.warn('Sarvam API call fallback:', err);
-      // Fallback clinical guidance if offline
-      let fallback = '';
-      const lower = text.toLowerCase();
-      if (lower.includes('sugar') || lower.includes('blood')) {
-        fallback = 'Aapka Fasting Blood Sugar 95 mg/dL hai, jo normal hai. HbA1c 7.6% moderate control mein hai.';
-      } else if (lower.includes('doctor') || lower.includes('appointment')) {
-        fallback = 'Dr. Vaidya Ananya Sharma ke saath aapka session aaj 10:30 AM (Bay 04) par scheduled hai.';
-      } else {
-        fallback = 'Aapka Wagner Grade 2 ulcer 72% healing progress par hai. Panchavalkala bio-wash ke baad Jatyadi Taila sterile dressing din mein 1 baar zaroor lagayein.';
-      }
-      setVoiceReply(fallback);
-
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        try {
-          window.speechSynthesis.cancel();
-          const utterance = new SpeechSynthesisUtterance(fallback);
-          const targetLocale = currentLanguageOption?.ttsLocale || 'hi-IN';
-          utterance.lang = targetLocale;
-          utterance.rate = 0.95;
-          const langPrefix = targetLocale.split('-')[0].toLowerCase();
-          const voices = window.speechSynthesis.getVoices();
-          const matchedVoice = voices.find((v) => v.lang.toLowerCase().replace('_', '-').startsWith(langPrefix)) ||
-                               voices.find((v) => v.lang.startsWith('hi') || v.lang.startsWith('en-IN')) || 
-                               voices[0];
-          if (matchedVoice) utterance.voice = matchedVoice;
-
-          utterance.onstart = () => setIsSpeaking(true);
-          utterance.onend = () => setIsSpeaking(false);
-          window.speechSynthesis.speak(utterance);
-        } catch (_) {}
-      }
+      console.warn('Groq assistant request failed:', err);
+      setVoiceReply('The clinical assistant is temporarily unavailable. Please try again in a moment or speak with your care team.');
     } finally {
       setIsProcessingAI(false);
     }

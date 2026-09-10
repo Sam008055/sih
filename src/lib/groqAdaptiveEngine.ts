@@ -36,41 +36,28 @@ export interface InstantClinicalSummary {
   doctorHandoverNote: string;
 }
 
-const GROQ_API_KEY =
-  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GROQ_API_KEY) ||
-  '';
-
-const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
 const PRIMARY_MODEL = 'openai/gpt-oss-20b';
 
-// Helper: Call Groq with OpenAI-compatible JSON schema
+// Helper: Call the local Groq proxy so the provider key never reaches the browser.
 async function callGroqChat(messages: Array<{ role: string; content: string }>, model = PRIMARY_MODEL): Promise<any> {
-  const res = await fetch(GROQ_ENDPOINT, {
+  const res = await fetch('/api/groq-chat', {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${GROQ_API_KEY}`,
-      'Content-Type': 'application/json'
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model,
       messages,
-      response_format: { type: 'json_object' },
-      temperature: 0.2
-    })
+      jsonMode: true,
+      model,
+    }),
   });
 
   if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Groq API error (${res.status}): ${errText}`);
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || `Groq API error (${res.status})`);
   }
 
   const data = await res.json();
-  const content = data.choices?.[0]?.message?.content;
-  if (!content) {
-    throw new Error('Groq returned empty response');
-  }
-
-  return JSON.parse(content);
+  if (!data.result) throw new Error('Groq returned an empty JSON response');
+  return data.result;
 }
 
 /**
@@ -299,16 +286,17 @@ function getFallbackInstantSummary(history: AnswerRecord[], patientName: string)
 
   return {
     chiefComplaint: complaint,
-    hpiSummary: `Patient ${patientName} presented with ${complaint}. Anamnesis progression indicates progressive symptoms: ${history.map(h => `${h.question}: ${h.answer}`).join('; ')}.`,
-    ayushDoshaAnalysis: 'Predominant Vata-Pitta vitiation with Mandagni and Dhatu kshaya. Recommended Panchavalkala bio-wash and Jatyadi taila sterile protocol.',
-    estimatedSeverity: hasRedFlag ? 'High Acute / Urgent' : 'Moderate Ambulatory',
+    hpiSummary: history.length
+      ? `Patient ${patientName} reported: ${history.map(h => `${h.question}: ${h.answer}`).join('; ')}.`
+      : 'No clinical history was captured.',
+    ayushDoshaAnalysis: 'AI summary unavailable; clinician review required.',
+    estimatedSeverity: hasRedFlag ? 'Red flag reported; clinician review required' : 'Not assessed',
     triagePriority: hasRedFlag ? 'urgent' : 'routine',
     redFlags: hasRedFlag ? ['Acute red-flag trigger flagged during anamnesis'] : [],
     keyRecommendations: [
-      'Comprehensive in-person examination by Dr. Vaidya Ananya Sharma',
-      'Blood glucose (Fasting & HbA1c) and Vitals check',
-      'Cleanse with Ayurvedic bio-wash before dressing application'
+      'Review the captured history with a clinician.',
+      'Confirm vitals and medication details during the consultation.'
     ],
-    doctorHandoverNote: `Pre-consultation intake completed for ${patientName}. Chief complaint: ${complaint}. Patient ready in Bay 04.`
+    doctorHandoverNote: `Pre-consultation intake captured for ${patientName}. Chief complaint: ${complaint}.`
   };
 }

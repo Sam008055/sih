@@ -10,18 +10,26 @@ import { createMediKioskAgent } from './agent.ts';
 dotenv.config({ path: '.env.local' });
 dotenv.config({ path: '.env' });
 
-const sarvamApiKey = process.env.SARVAM_API_KEY || 'sk_k78xw4hw_AIq2FZ8NytX15FVxcXIdVHcU';
+const sarvamApiKey = process.env.SARVAM_API_KEY;
+const groqApiKey = process.env.GROQ_API_KEY;
+
+if (!sarvamApiKey) throw new Error('SARVAM_API_KEY is not configured');
+if (!groqApiKey) throw new Error('GROQ_API_KEY is not configured');
 
 export default defineAgent({
   entry: async (ctx) => {
-    // 1. Voice Activity Detector
-    const vad = await silero.VAD.load();
+    // 1. Voice Activity Detector with noise-resilient activation threshold & padding
+    const vad = await silero.VAD.load({
+      activationThreshold: 0.6, // Prevents steady ambient noise from falsely sustaining speech
+      minSilenceDuration: 450,  // Milliseconds of silence to close speech chunk
+      prefixPaddingDuration: 300,
+    });
 
-    // 2. Multilingual Indic Reasoning LLM (Sarvam 105B)
-    const sarvamLLM = new OpenAILLM({
-      model: 'sarvam-105b-conversations',
-      baseURL: 'https://api.sarvam.ai/v1',
-      apiKey: sarvamApiKey,
+    // 2. Clinical reasoning LLM (Groq GPT-OSS 20B)
+    const groqLLM = new OpenAILLM({
+      model: 'openai/gpt-oss-20b',
+      baseURL: 'https://api.groq.com/openai/v1',
+      apiKey: groqApiKey,
     });
 
     // 3. Configure voice session with Sarvam STT (saaras:v3) and TTS (bulbul:v3)
@@ -33,15 +41,16 @@ export default defineAgent({
         languageCode: 'unknown',
       }),
 
-      // Text to Speech: Sarvam Bulbul v3 with natural expressive Indic voice
+      // Text to Speech: Sarvam Bulbul v3 with natural expressive Indic female voice (kavya)
       tts: new sarvam.TTS({
         apiKey: sarvamApiKey,
         model: 'bulbul:v3',
-        speaker: 'priya',
+        speaker: 'kavya',
+        pace: 1.15,
       }),
 
-      // LLM Reasoning: Sarvam 105B
-      llm: sarvamLLM,
+      // LLM Reasoning: Groq GPT-OSS 20B
+      llm: groqLLM,
 
       // Voice Activity Detection
       vad: vad,
@@ -50,8 +59,8 @@ export default defineAgent({
         interruption: { mode: 'adaptive' },
         preemptiveGeneration: { enabled: true },
         endpointing: {
-          minDelay: 0.35,
-          maxDelay: 1.2,
+          minDelay: 500,  // Milliseconds: wait 500ms of silence before declaring turn complete
+          maxDelay: 2500, // Milliseconds: maximum wait ceiling
         },
       },
     });
@@ -73,16 +82,24 @@ export default defineAgent({
   },
 });
 
-// Run LiveKit Agent CLI
-cli.runApp(
-  new ServerOptions({
-    agent: fileURLToPath(import.meta.url),
-    agentName: 'medikiosk-voice-agent',
-    wsURL: process.env.LIVEKIT_URL,
-    apiKey: process.env.LIVEKIT_API_KEY,
-    apiSecret: process.env.LIVEKIT_API_SECRET,
-    numIdleProcesses: 1,
-    initializeProcessTimeout: 60 * 1000,
-  }),
+// Run LiveKit Agent CLI only when executed as the main entrypoint
+const isMain = process.argv[1] && (
+  process.argv[1] === fileURLToPath(import.meta.url) ||
+  import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/'))
 );
+
+if (isMain) {
+  cli.runApp(
+    new ServerOptions({
+      agent: fileURLToPath(import.meta.url),
+      agentName: 'medikiosk-voice-agent',
+      wsURL: process.env.LIVEKIT_URL,
+      apiKey: process.env.LIVEKIT_API_KEY,
+      apiSecret: process.env.LIVEKIT_API_SECRET,
+      numIdleProcesses: 1,
+      initializeProcessTimeout: 60 * 1000,
+    }),
+  );
+}
+
 

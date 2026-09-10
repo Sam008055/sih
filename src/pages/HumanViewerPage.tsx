@@ -7,7 +7,7 @@ export default function HumanViewerPage() {
   const [isModalOpen, setIsModalOpen] = useState(true);
 
   return (
-    <div className="min-h-screen bg-[#f8f3eb] text-[#080331] font-sans">
+    <div className="human-workspace min-h-screen bg-[#f8f3eb] text-[#080331] font-sans">
       {/* Header */}
       <header className="px-6 py-4 bg-white/80 backdrop-blur-md border-b border-[#4d4439]/10 flex items-center justify-between">
         <div className="flex items-center gap-3">

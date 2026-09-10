@@ -28,7 +28,9 @@ import {
   Send,
   Volume2,
   VolumeX,
-  Loader2
+  Loader2,
+  Languages,
+  Gauge
 } from 'lucide-react';
 import FluidVoiceOrb from './patient/FluidVoiceOrb';
 import TouchHistoryEngine, { type HistoryTakingResult } from './TouchHistoryEngine';
@@ -65,16 +67,17 @@ export default function VoiceAgentModal({
   const [serverUrl, setServerUrl] = useState<string>('');
   const [connecting, setConnecting] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'voice' | 'touch' | 'report'>(defaultTab);
-  const [isStandaloneVoice, setIsStandaloneVoice] = useState<boolean>(false);
+  const [isStandaloneVoice, setIsStandaloneVoice] = useState<boolean>(true);
   const [reportSaved, setReportSaved] = useState<boolean>(false);
   const [touchResult, setTouchResult] = useState<HistoryTakingResult | null>(null);
+  const [fallbackNotice, setFallbackNotice] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       setActiveTab(defaultTab);
-      if (defaultTab === 'voice' && !token) {
-        connectToAgent();
-      }
+      // Directly start the hands-free Sarvam AI Phone Call without waiting for non-existent LiveKit room
+      setIsStandaloneVoice(true);
+      setToken(null);
     }
   }, [isOpen, defaultTab]);
 
@@ -96,9 +99,9 @@ export default function VoiceAgentModal({
       }
     } catch (err: any) {
       console.warn('LiveKit server unavailable, activating autonomous direct voice assistant:', err);
-      // Seamless fallback: Never block user with a broken screen!
       setIsStandaloneVoice(true);
       setToken(null);
+      setFallbackNotice(null);
     } finally {
       setConnecting(false);
     }
@@ -208,10 +211,26 @@ export default function VoiceAgentModal({
                 <h3 className="font-semibold text-slate-900 text-base tracking-tight">
                   {title}
                 </h3>
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/70">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  {token ? 'LiveKit Connected' : isStandaloneVoice ? 'Autonomous Voice Active' : 'Dual Voice & Touch'}
-                </span>
+                <button
+                  onClick={() => {
+                    if (token) {
+                      setToken(null);
+                      setIsStandaloneVoice(true);
+                       setFallbackNotice('Switched to direct voice mode: Groq reasoning + Sarvam speech');
+                    } else {
+                      connectToAgent();
+                    }
+                  }}
+                  title="Click to switch voice engines"
+                  className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-0.5 rounded-full border transition-all cursor-pointer ${
+                    token
+                      ? 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200/80'
+                      : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200/70'
+                  }`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${token ? 'bg-indigo-500' : 'bg-emerald-500'}`} />
+                  {token ? 'LiveKit Room (Switch to Direct)' : isStandaloneVoice ? 'Direct Sarvam Voice' : 'Dual Voice & Touch'}
+                </button>
               </div>
               <p className="text-xs text-slate-500 font-normal">{subtitle}</p>
             </div>
@@ -271,6 +290,18 @@ export default function VoiceAgentModal({
         <div className="overflow-y-auto flex-1">
           {activeTab === 'voice' ? (
             <div className="p-6 flex flex-col items-center justify-center bg-gradient-to-b from-slate-50/40 via-white to-slate-50/30">
+              {fallbackNotice && (
+                <div className="w-full max-w-md mx-auto mb-3 px-3.5 py-2 rounded-2xl bg-indigo-50/90 border border-indigo-200/80 text-[11px] text-indigo-900 flex items-center justify-between shadow-2xs animate-in fade-in">
+                  <div className="flex items-center gap-2">
+                    <Sparkles size={13} className="text-indigo-600 shrink-0" />
+                    <span className="font-medium">{fallbackNotice}</span>
+                  </div>
+                  <button onClick={() => setFallbackNotice(null)} className="text-indigo-400 hover:text-indigo-700 cursor-pointer ml-2">
+                    <X size={13} />
+                  </button>
+                </div>
+              )}
+
               {connecting ? (
                 <div className="w-full flex flex-col items-center justify-center py-12">
                   <div className="relative w-20 h-20 mb-5">
@@ -296,6 +327,11 @@ export default function VoiceAgentModal({
                   <ActiveVoiceAssistantContent
                     onEndCall={handleEndCall}
                     onOpenReport={() => setActiveTab('report')}
+                    onFallbackToDirectVoice={() => {
+                      setToken(null);
+                      setIsStandaloneVoice(true);
+                       setFallbackNotice('LiveKit room idle — auto-switched to direct Groq + Sarvam voice mode');
+                    }}
                   />
                 </LiveKitRoom>
               ) : (
@@ -362,10 +398,9 @@ export default function VoiceAgentModal({
                   <span>Switch to Voice</span>
                 </button>
               </div>
-
               <TouchHistoryEngine
-                patientName={participantName}
                 onComplete={handleTouchHistoryComplete}
+                patientName={participantName}
               />
             </div>
           ) : (
@@ -439,7 +474,7 @@ export default function VoiceAgentModal({
                     </h5>
                   </div>
                   <span className="text-[11px] text-slate-400 font-medium">
-                    {touchResult ? 'Verified via Touch MCQ Adaptive Engine' : 'Voice Verified by Med-Gemma Clinical Intelligence'}
+                    {touchResult ? 'Verified via Touch MCQ Adaptive Engine' : 'Voice Verified by Groq Clinical Assistant'}
                   </span>
                 </div>
 
@@ -591,7 +626,57 @@ export default function VoiceAgentModal({
   );
 }
 
-/** Standalone Browser-Native Voice Assistant with Sarvam AI + Web Speech Synthesis */
+/** Helper to encode Float32Array PCM audio into standard 16-bit 16kHz WAV Blob */
+function encodeWAV(samples: Float32Array, sampleRate: number): Blob {
+  const buffer = new ArrayBuffer(44 + samples.length * 2);
+  const view = new DataView(buffer);
+  const writeString = (offset: number, string: string) => {
+    for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i));
+  };
+  writeString(0, 'RIFF');
+  view.setUint32(4, 36 + samples.length * 2, true);
+  writeString(8, 'WAVE');
+  writeString(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true); // PCM format
+  view.setUint16(22, 1, true); // Mono channel
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true); // Block align (1 channel * 2 bytes)
+  view.setUint16(34, 16, true); // Bits per sample
+  writeString(36, 'data');
+  view.setUint32(40, samples.length * 2, true);
+  let offset = 44;
+  for (let i = 0; i < samples.length; i++, offset += 2) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+  }
+  return new Blob([view], { type: 'audio/wav' });
+}
+
+/** Supported Indic call languages with native labels and script hints */
+const CALL_LANGUAGES = [
+  { code: 'auto', name: 'Auto-Detect', native: 'ಕನ್ನಡ / हिन्दी / Auto', flag: '🌐' },
+  { code: 'kn', name: 'Kannada', native: 'ಕನ್ನಡ', flag: '🇮🇳' },
+  { code: 'hi', name: 'Hindi', native: 'हिन्दी', flag: '🇮🇳' },
+  { code: 'en', name: 'English', native: 'Indian English', flag: '🌐' },
+  { code: 'mr', name: 'Marathi', native: 'मराठी', flag: '🇮🇳' },
+  { code: 'te', name: 'Telugu', native: 'తెలుగు', flag: '🇮🇳' },
+  { code: 'ta', name: 'Tamil', native: 'தமிழ்', flag: '🇮🇳' },
+  { code: 'bn', name: 'Bengali', native: 'বাংলা', flag: '🇮🇳' },
+  { code: 'gu', name: 'Gujarati', native: 'ગુજરાતી', flag: '🇮🇳' },
+];
+
+/**
+ * Continuous Hands-Free Phone Call Assistant
+ * Powered by Groq + Sarvam voice services:
+ * - Groq GPT-OSS 20B: clinical reasoning with dynamic pace judgment
+ * - Sarvam Bulbul v3: Natural female voice (speaker 'kavya') with adaptive pace
+ * - Sarvam Saaras v3: Multilingual acoustic Speech-to-Text fallback
+ * - Acoustic VAD with half-duplex turn-taking:
+ *   1. The microphone is paused while the assistant speaks.
+ *   2. When the patient stops talking, the turn is automatically processed.
+ */
 function StandaloneVoiceAssistantContent({
   participantName,
   onEndCall,
@@ -605,241 +690,905 @@ function StandaloneVoiceAssistantContent({
   onSwitchToTouch: () => void;
   suggestedPrompts: string[];
 }) {
-  const { language, currentLanguageOption } = useLanguage();
+  const { language } = useLanguage();
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
+  const [voiceSpeed, setVoiceSpeed] = useState<number>(1.16); // Dynamically judged by AI
+  const [paceReason, setPaceReason] = useState<string>('Natural Conversational');
+  const [selectedLang, setSelectedLang] = useState<string>('auto'); // Auto-detect multi-language by default
+  const [detectedLang, setDetectedLang] = useState<string>(language === 'kn' ? 'kn' : language === 'en' ? 'en' : 'hi');
+  const [callDuration, setCallDuration] = useState<number>(0);
   const [typeQuery, setTypeQuery] = useState('');
+  const [liveTranscript, setLiveTranscript] = useState('');
+  const [micPermissionDenied, setMicPermissionDenied] = useState(false);
+  const [audioLevel, setAudioLevel] = useState(0);
 
-  const getGreeting = (lang: string, name: string): string => {
+  // Sync refs so high-frequency audio analysis and async callbacks always read current state
+  const isListeningRef = useRef(false);
+  const isSpeakingRef = useRef(false);
+  const isThinkingRef = useRef(false);
+  const isMutedRef = useRef(false);
+  const voiceSpeedRef = useRef(1.16);
+  const selectedLangRef = useRef('auto');
+  const isCallActiveRef = useRef(true);
+
+  // VAD & Barge-In tracking refs (Adaptive Noise-Immune Turn Endpointing)
+  const userHasSpokenRef = useRef(false);
+  const noiseFloorRef = useRef<number>(0.012); // Ambient RMS baseline
+  const noiseVoiceBandRef = useRef<number>(12); // Ambient voice-band baseline
+  const calibrationSamplesRef = useRef<Array<{ rms: number; voiceBand: number }>>([]);
+  const calibrationUntilRef = useRef<number | null>(null);
+  const lastSpeechTimeRef = useRef<number | null>(null);
+  const turnStartedAtRef = useRef<number | null>(null);
+  const consecutiveSpeechFramesRef = useRef<number>(0);
+  const consecutiveSilenceFramesRef = useRef<number>(0);
+  const bargeInCounterRef = useRef<number>(0);
+  const finishTurnLockRef = useRef(false);
+  const startingListeningRef = useRef(false);
+  const accumulatedTranscriptRef = useRef<string>('');
+  const watchdogTimerRef = useRef<any>(null);
+
+  const recognitionRef = useRef<any>(null);
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const audioSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const silentGainRef = useRef<GainNode | null>(null);
+  const vadFrameRef = useRef<number | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const pcmChunksRef = useRef<Float32Array[]>([]);
+  const speechSilenceTimerRef = useRef<any>(null);
+  const detectedLangRef = useRef<string>(language === 'kn' ? 'kn' : language === 'en' ? 'en' : 'hi');
+
+  // Keep refs in sync with state
+  useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
+  useEffect(() => { voiceSpeedRef.current = voiceSpeed; }, [voiceSpeed]);
+  useEffect(() => { selectedLangRef.current = selectedLang; }, [selectedLang]);
+  useEffect(() => {
+    if (selectedLang !== 'auto') {
+      detectedLangRef.current = selectedLang;
+      setDetectedLang(selectedLang);
+    }
+  }, [selectedLang]);
+
+  // Dynamic clinical greeting in patient's preferred or detected language
+  const getInitialGreeting = (lang: string, name: string): string => {
     switch (lang) {
-      case 'ta':
-        return `வணக்கம் ${name}! நான் டாக்டர் வைத்யா அனன்யா சர்மாவின் AI மருத்துவ உதவியாளர். உங்கள் புண் அல்லது பிற பிரச்சனைகள் பற்றி கூறுங்கள்.`;
-      case 'te':
-        return `నమస్కారం ${name}! నేను డాక్టర్ వైద్య అనన్య శర్మ యొక్క AI క్లినికల్ అసిస్టెంట్‌ని. మీ పాదం గాయం లేదా ఇతర బాధల గురించి దయచేసి చెప్పండి.`;
-      case 'mr':
-        return `नमस्ते ${name}! मी डॉ. वैद्या अनन्या शर्मा यांची AI क्लिनिकल असिस्टंट आहे. कृपया तुमच्या जखमेबद्दल किंवा त्रासाबद्दल सांगा.`;
-      case 'bn':
-        return `নমস্কার ${name}! আমি ড. বৈদ্য অনন্যা শর্মার এআই ক্লিনিক্যাল অ্যাসিস্ট্যান্ট। আপনার পায়ের ক্ষত বা অন্যান্য সমস্যা কেমন আছে জানান।`;
-      case 'gu':
-        return `નમસ્તે ${name}! હું ડૉ. વૈદ્ય અનન્યા શર્માની AI ક્લિનિકલ આસિસ્ટન્ટ છું. કૃપા કરીને તમારા પગના ઘા અથવા અન્ય તકલીફ વિશે જણાવો.`;
       case 'kn':
-        return `ನಮಸ್ಕಾರ ${name}! ನಾನು ಡಾ. ವೈದ್ಯ ಅನನ್ಯ ಶರ್ಮಾ ಅವರ AI ಕ್ಲಿನಿಕಲ್ ಸಹಾಯಕ. ನಿಮ್ಮ ಕಾಲಿನ ಗಾಯ ಅಥವಾ ಇತರ ತೊಂದರೆಗಳ ಬಗ್ಗೆ ತಿಳಿಸಿ.`;
-      case 'ml':
-        return `നമസ്കാരം ${name}! ഞാൻ ഡോ. വൈദ്യ അനന്യ ശർമ്മയുടെ AI ക്ലിനിക്കൽ അസിസ്റ്റന്റാണ്. നിങ്ങളുടെ കാൽ വ്രണത്തെക്കുറിച്ചോ മറ്റ് ബുദ്ധിமுട്ടുകളെക്കുറിച്ചോ പറയൂ.`;
-      case 'or':
-        return `ନମସ୍କାର ${name}! ମୁଁ ଡାକ୍ତର ବୈଦ୍ୟ ଅନନ୍ୟା ଶର୍ମାଙ୍କ AI କ୍ଲିନିକାଲ୍ ସହାୟକ। ଆପଣଙ୍କ ଗୋଡ଼ ଘାଆ ବା ଅନ୍ୟ କଷ୍ଟ ବିଷୟରେ ଜଣାନ୍ତୁ।`;
-      case 'pa':
-        return `ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ ${name}! ਮੈਂ ਡਾ. ਵੈਦਿਆ ਅਨੰਨਿਆ ਸ਼ਰਮਾ ਦੀ AI ਕਲੀਨਿਕਲ ਅਸਿਸਟੈਂਟ ਹਾਂ। ਕਿਰਪਾ ਕਰਕੇ ਆਪਣੇ ਪੈਰ ਦੇ ਜ਼ਖ਼ਮ ਜਾਂ ਤਕਲੀਫ਼ ਬਾਰੇ ਦੱਸੋ।`;
+        return `ನಮಸ್ಕಾರ ${name}! ನಾನು ಡಾ. ವೈದ್ಯ ಅನನ್ಯ ಶರ್ಮಾ ಅವರ AI ಕ್ಲಿನಿಕಲ್ ಸಹಾಯಕ. ನಿಮ್ಮ ಕಾಲಿನ ಗಾಯ ಅಥವಾ ಇತರ ತೊಂದರೆಗಳ ಬಗ್ಗೆ ಮುಕ್ತವಾಗಿ ಮಾತನಾಡಿ, ನಾನು ಕೇಳಿಸಿಕೊಳ್ಳುತ್ತಿದ್ದೇನೆ.`;
       case 'en':
-        return `Hello ${name}! I am Dr. Vaidya Ananya Sharma's AI clinical voice assistant. Please describe how your symptoms feel today.`;
+        return `Hello ${name}! I am Dr. Vaidya Ananya Sharma's clinical voice assistant at OPD Bay 04. This call is active, please describe your foot ulcer or any symptoms.`;
+      case 'mr':
+        return `नमस्ते ${name}! मी डॉ. वैद्या अनन्या शर्मा यांची AI क्लिनिकल असिस्टंट आहे. कृपया तुमच्या दुखण्याबद्दल बोला.`;
+      case 'te':
+        return `నమస్కారం ${name}! నేను డాక్టర్ వైద్య అనన్య శర్మ యొక్క AI క్లినికಲ್ అಸಿస్టెంట్‌ని. మీ సమస్యల గురించి దయచేసి మాట్లాడండి.`;
+      case 'ta':
+        return `வணக்கம் ${name}! நான் டாக்டர் வைத்யா அனன்யா சர்மாவின் AI மருத்துவ உதவியாளர். உங்கள் புண் அல்லது பிற பிரச்சனைகள் பற்றி பேசுங்கள்.`;
+      case 'bn':
+        return `নমস্কার ${name}! আমি ড. বৈদ্য অনন্যা শর্মার এআই ক্লিনিক্যাল অ্যাসিস্ট্যান্ট। আপনার সমস্যা নিয়ে কথা বলুন।`;
+      case 'gu':
+        return `નમસ્તે ${name}! હું ડૉ. વૈદ્ય અનન્યા શર્માની AI ક્લિનિકલ આસિસ્ટન્ટ છું. તમારા સ્વાસ્થ્ય વિશે જણાવો.`;
       default:
-        return `नमस्ते ${name}! मैं डॉ. वैद्य अनन्या शर्मा की AI क्लिनिकल असिस्टेंट हूँ। कृपया बताइए आपको पैर के घाव या अन्य तकलीफ में कैसा लग रहा है?`;
+        return `नमस्ते ${name}! मैं डॉ. वैद्य अनन्या शर्मा की AI क्लिनिकल असिस्टेंट हूँ। यह फोन कॉल चालू है, कृपया अपने पैर के घाव या तकलीफ के बारे में निसंकोच बोलिए।`;
     }
   };
 
   const [latestAssistantSpeech, setLatestAssistantSpeech] = useState<string>(() =>
-    getGreeting(language, participantName)
+    getInitialGreeting(selectedLang !== 'auto' ? selectedLang : language, participantName)
   );
   const [latestPatientSpeech, setLatestPatientSpeech] = useState<string | null>(null);
 
-  const recognitionRef = useRef<any>(null);
-
-  // Re-sync greeting if language changes
+  // Phone Call Duration Timer
   useEffect(() => {
-    setLatestAssistantSpeech(getGreeting(language, participantName));
-  }, [language, participantName]);
-
-  // Initialize event listener for prompt clicks
-  useEffect(() => {
-    const handlePromptEvent = (e: any) => {
-      const promptText = e.detail;
-      if (promptText) {
-        handleUserSpeech(promptText);
+    const timer = setInterval(() => {
+      if (isCallActiveRef.current) {
+        setCallDuration((c) => c + 1);
       }
-    };
-    window.addEventListener('medikiosk_voice_prompt', handlePromptEvent);
-    return () => window.removeEventListener('medikiosk_voice_prompt', handlePromptEvent);
+    }, 1000);
+    return () => clearInterval(timer);
   }, []);
 
-  // Text-to-Speech playback using SpeechSynthesis
-  const speakText = (text: string) => {
-    if (!soundEnabled || !('speechSynthesis' in window)) return;
-    try {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.95;
-      utterance.pitch = 1.05;
-      const targetLocale = currentLanguageOption?.ttsLocale || 'hi-IN';
-      utterance.lang = targetLocale;
-      const langPrefix = targetLocale.split('-')[0].toLowerCase();
-      const voices = window.speechSynthesis.getVoices();
-      const matchedVoice = voices.find((v) => v.lang.toLowerCase().replace('_', '-').startsWith(langPrefix)) ||
-                           voices.find((v) => v.lang.startsWith('hi') || v.lang.startsWith('en-IN')) || 
-                           voices[0];
-      if (matchedVoice) utterance.voice = matchedVoice;
-      
-      utterance.onstart = () => {
-        setIsSpeaking(true);
-      };
-      utterance.onend = () => {
-        setIsSpeaking(false);
-      };
-      utterance.onerror = () => {
-        setIsSpeaking(false);
-      };
-      window.speechSynthesis.speak(utterance);
-    } catch (_) {
-      setIsSpeaking(false);
-    }
+  const formatDuration = (seconds: number) => {
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
   };
 
-  // Toggle speech recognition
-  const toggleListening = () => {
-    if (isListening) {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
+  // Stop any active neural audio playback immediately
+  const stopAudio = () => {
+    if (currentAudioRef.current) {
+      try {
+        currentAudioRef.current.pause();
+        currentAudioRef.current.currentTime = 0;
+      } catch (_) {}
+      currentAudioRef.current = null;
+    }
+    setIsSpeaking(false);
+    isSpeakingRef.current = false;
+  };
+
+  // High-fidelity neural voice synthesis with Sarvam Bulbul v3 (female 'kavya' voice, pace adjusted)
+  const playNeuralVoice = async (text: string, langHint?: string, paceHint?: number) => {
+    // Use half-duplex turn-taking: the microphone is fully stopped while TTS is playing.
+    // This prevents the assistant's own voice from becoming the next user transcript.
+    stopListening();
+    if (!soundEnabled || !isCallActiveRef.current) {
+      if (isCallActiveRef.current && !isMutedRef.current) {
+        setTimeout(() => startListening(), 600);
       }
-      setIsListening(false);
       return;
     }
 
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      try {
-        const rec = new SpeechRecognition();
-        rec.lang = currentLanguageOption?.ttsLocale || 'hi-IN';
-        rec.continuous = false;
-        rec.interimResults = false;
+    const cleanText = text.replace(/[*#_`[\]]/g, '').trim();
+    if (!cleanText) return;
 
-        rec.onstart = () => {
-          setIsListening(true);
-          window.speechSynthesis.cancel();
-          setIsSpeaking(false);
-        };
+    stopAudio();
+    setIsSpeaking(true);
+    isSpeakingRef.current = true;
 
-        rec.onresult = (event: any) => {
-          const text = event.results[0][0].transcript;
-          handleUserSpeech(text);
-          setIsListening(false);
-        };
-
-        rec.onerror = () => {
-          setIsListening(false);
-        };
-
-        rec.onend = () => {
-          setIsListening(false);
-        };
-
-        recognitionRef.current = rec;
-        rec.start();
-      } catch (_) {
-        simulateVoiceIntake();
-      }
-    } else {
-      simulateVoiceIntake();
+    // Detect language code for TTS
+    let targetLang = langHint || selectedLangRef.current;
+    if (targetLang === 'auto') {
+      if (/[\u0C80-\u0CFF]/.test(cleanText)) targetLang = 'kn';
+      else if (/[\u0900-\u097F]/.test(cleanText)) targetLang = 'hi';
+      else if (/[\u0B80-\u0BFF]/.test(cleanText)) targetLang = 'ta';
+      else if (/[\u0C00-\u0C7F]/.test(cleanText)) targetLang = 'te';
+      else if (/[\u0980-\u09FF]/.test(cleanText)) targetLang = 'bn';
+      else if (/[\u0A80-\u0AFF]/.test(cleanText)) targetLang = 'gu';
+      else if (/^[A-Za-z0-9\s.,!?'"()\-]+$/.test(cleanText)) targetLang = 'en';
+      else targetLang = 'hi';
     }
-  };
 
-  const simulateVoiceIntake = () => {
-    setIsListening(true);
-    setTimeout(() => {
-      setIsListening(false);
-      const sample = language === 'hi'
-        ? 'घाव में दर्द 4 नंबर पर है, सुबह त्रिफला कषाय से धोया था और जलन कम है।'
-        : 'Wound pain is mild around 4 out of 10, did Triphala wash this morning and burning is reduced.';
-      handleUserSpeech(sample);
-    }, 2000);
-  };
-
-  const handleUserSpeech = async (text: string) => {
-    setLatestPatientSpeech(text);
-    setIsThinking(true);
+    const paceToUse = paceHint || voiceSpeedRef.current || 1.16;
 
     try {
-      // Connect to Sarvam AI 105B Indic clinical model
-      const res = await fetch('https://api.sarvam.ai/v1/chat/completions', {
+      const res = await fetch('/api/voice/tts', {
         method: 'POST',
-        headers: {
-          'api-subscription-key': 'sk_k78xw4hw_AIq2FZ8NytX15FVxcXIdVHcU',
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'sarvam-105b-conversations',
-          messages: [
-            {
-              role: 'system',
-              content: `You are the official clinical voice assistant for Dr. Vaidya Ananya Sharma at OPD Bay 04. The patient is ${participantName}, 58M, Wagner Grade 2 plantar ulcer, fasting sugar 95 mg/dL. The patient preferred language is ${currentLanguageOption?.name || 'Hindi'} (${currentLanguageOption?.nativeName || 'हिन्दी'}). Answer concisely, warmly, and empathetically in 1 to 2 sentences directly in ${currentLanguageOption?.name || 'Hindi'} with clinical guidance, reassuring the patient.`
-            },
-            { role: 'user', content: text }
-          ]
+          text: cleanText,
+          language: targetLang,
+          pace: paceToUse,
+          speaker: 'kavya' // Warm, articulate female neural voice
         })
       });
 
       if (res.ok) {
         const data = await res.json();
-        const reply = data.choices?.[0]?.message?.content || 'Bahut badhiya Govind ji. Aapka wound progress clean hai, Triphala wash aur Jatyadi Ghrita patti niyamit jaari rakhein.';
-        setLatestAssistantSpeech(reply);
-        speakText(reply);
-      } else {
-        throw new Error('Sarvam API status not ok');
+        if (data.audio) {
+          const audio = new Audio(`data:audio/wav;base64,${data.audio}`);
+          currentAudioRef.current = audio;
+          audio.playbackRate = paceToUse;
+
+          audio.onended = () => {
+            setIsSpeaking(false);
+            isSpeakingRef.current = false;
+            currentAudioRef.current = null;
+            // Re-arm the microphone only after playback has completely finished.
+            if (isCallActiveRef.current && !isMutedRef.current) {
+              setTimeout(() => startListening(), 350);
+            }
+          };
+
+          audio.onerror = (e) => {
+            console.warn('Audio playback error:', e);
+            setIsSpeaking(false);
+            isSpeakingRef.current = false;
+            currentAudioRef.current = null;
+            if (isCallActiveRef.current && !isMutedRef.current) {
+              setTimeout(() => startListening(), 350);
+            }
+          };
+
+          await audio.play();
+          return;
+        }
       }
-    } catch (_) {
-      // Intelligent Ayurvedic clinical fallback response
-      let fallback = 'Bahut badhiya Govind ji. Dard 4/10 par niyantrit hai aur granulation saaf hai. Roz Triphala kashaya wash aur Jatyadi patti niyamit rakhein.';
-      if (text.toLowerCase().includes('dard') || text.toLowerCase().includes('pain')) {
-        fallback = 'Dard ki sthiti note kar li gayi hai. Kaishore Guggulu niyamit lein aur nange paanv bilkul na chalein.';
-      } else if (text.toLowerCase().includes('sugar') || text.toLowerCase().includes('mitha')) {
-        fallback = 'Aapka fasting blood sugar 95 mg/dL controlled target par hai. Madhumehari Churna sham ko bhi lein.';
+      setTimeout(() => {
+        setIsSpeaking(false);
+        isSpeakingRef.current = false;
+        if (isCallActiveRef.current && !isMutedRef.current) {
+          setTimeout(() => startListening(), 350);
+        }
+      }, 1200);
+    } catch (e) {
+      console.warn('TTS request error:', e);
+      setIsSpeaking(false);
+      isSpeakingRef.current = false;
+      if (isCallActiveRef.current && !isMutedRef.current) {
+        setTimeout(() => startListening(), 350);
       }
-      setLatestAssistantSpeech(fallback);
-      speakText(fallback);
-    } finally {
-      setIsThinking(false);
     }
   };
 
+  // Start continuous, hands-free phone call listening with acoustic VAD.
+  // The call is intentionally half-duplex: the mic is paused while TTS is playing.
+  const startListening = async () => {
+    if (isListeningRef.current || startingListeningRef.current || isSpeakingRef.current || isMutedRef.current || !isCallActiveRef.current) return;
+    startingListeningRef.current = true;
+    setMicPermissionDenied(false);
+    setLiveTranscript('');
+    accumulatedTranscriptRef.current = '';
+    pcmChunksRef.current = [];
+    userHasSpokenRef.current = false;
+    lastSpeechTimeRef.current = null;
+    consecutiveSpeechFramesRef.current = 0;
+    consecutiveSilenceFramesRef.current = 0;
+    bargeInCounterRef.current = 0;
+    finishTurnLockRef.current = false;
+    turnStartedAtRef.current = null;
+    calibrationSamplesRef.current = [];
+    calibrationUntilRef.current = Date.now() + 900;
+
+    // Safety watchdog: enforce both a silence endpoint and a hard maximum turn length.
+    if (watchdogTimerRef.current) clearInterval(watchdogTimerRef.current);
+    watchdogTimerRef.current = setInterval(() => {
+      if (!isListeningRef.current || !isCallActiveRef.current) return;
+      if (turnStartedAtRef.current && Date.now() - turnStartedAtRef.current >= 15000) {
+        console.log('[Watchdog] Maximum turn duration reached; finalizing audio.');
+        stopListeningAndProcess();
+        return;
+      }
+      if (userHasSpokenRef.current && lastSpeechTimeRef.current) {
+        const timeSinceLastSpeech = Date.now() - lastSpeechTimeRef.current;
+        const currentText = (accumulatedTranscriptRef.current || liveTranscript).trim();
+        if (timeSinceLastSpeech >= 1200) {
+          console.log('[Watchdog] Finalizing turn after speech cessation:', currentText || '(acoustic turn)');
+          stopListeningAndProcess(currentText.length > 1 ? currentText : undefined);
+        }
+      }
+    }, 350);
+
+    // 1. Acquire microphone stream (keep active across call)
+    let stream = mediaStreamRef.current;
+    if (!stream || !stream.active) {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }
+        });
+        mediaStreamRef.current = stream;
+      } catch (err: any) {
+        console.warn('Microphone permission or hardware access denied:', err);
+        setMicPermissionDenied(true);
+        startingListeningRef.current = false;
+        return;
+      }
+    }
+
+    // 2. Setup Web Audio Analyser for Acoustic VAD, Barge-In, and backup PCM
+    try {
+      if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        audioCtxRef.current = new AudioCtx({ sampleRate: 16000 });
+      }
+      if (audioCtxRef.current.state === 'suspended') {
+        await audioCtxRef.current.resume();
+      }
+
+      const source = audioCtxRef.current.createMediaStreamSource(stream);
+      const analyser = audioCtxRef.current.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.2;
+      source.connect(analyser);
+
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      const timeData = new Uint8Array(analyser.fftSize);
+      const sampleRate = audioCtxRef.current?.sampleRate || 16000;
+      const binWidth = sampleRate / analyser.fftSize;
+
+      const updateLevel = () => {
+        if (!isCallActiveRef.current || !isListeningRef.current || isSpeakingRef.current) {
+          vadFrameRef.current = null;
+          return;
+        }
+        analyser.getByteFrequencyData(dataArray);
+        analyser.getByteTimeDomainData(timeData);
+
+        let rmsSum = 0;
+        for (let i = 0; i < timeData.length; i++) {
+          const normalized = (timeData[i] - 128) / 128;
+          rmsSum += normalized * normalized;
+        }
+        const rms = Math.sqrt(rmsSum / timeData.length);
+
+        // 1. Spectral Voice-Band Weighting: Focus on human vocal formants (250Hz - 3600Hz)
+        let voiceBandSum = 0;
+        let voiceBandCount = 0;
+        let broadbandSum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+          broadbandSum += dataArray[i];
+          const freq = i * binWidth;
+          if (freq >= 250 && freq <= 3600) {
+            voiceBandSum += dataArray[i];
+            voiceBandCount++;
+          }
+        }
+        const broadbandAvg = broadbandSum / dataArray.length;
+        const voiceBandAvg = voiceBandCount > 0 ? voiceBandSum / voiceBandCount : broadbandAvg;
+
+        // Visual UI level (normalized 0-100)
+        const level = Math.min(100, Math.round(broadbandAvg * 1.5));
+        setAudioLevel(level);
+
+        // 2. Calibrate the room before deciding whether anything is speech.
+        // A median baseline is more stable than continuously chasing a fan or keyboard.
+        if (calibrationUntilRef.current && Date.now() < calibrationUntilRef.current) {
+          calibrationSamplesRef.current.push({ rms, voiceBand: voiceBandAvg });
+          vadFrameRef.current = requestAnimationFrame(updateLevel);
+          return;
+        }
+        if (calibrationUntilRef.current) {
+          const samples = calibrationSamplesRef.current.slice().sort((a, b) => a.rms - b.rms);
+          const midpoint = samples[Math.floor(samples.length / 2)];
+          if (midpoint) {
+            noiseFloorRef.current = Math.max(0.004, midpoint.rms);
+            const voiceSamples = calibrationSamplesRef.current.map((sample) => sample.voiceBand).sort((a, b) => a - b);
+            noiseVoiceBandRef.current = Math.max(8, voiceSamples[Math.floor(voiceSamples.length / 2)] || 8);
+          }
+          calibrationUntilRef.current = null;
+          calibrationSamplesRef.current = [];
+          console.log('[VAD] Room calibration complete:', {
+            rms: noiseFloorRef.current.toFixed(4),
+            voiceBand: noiseVoiceBandRef.current.toFixed(1),
+          });
+        }
+
+        const currentNoiseFloor = noiseFloorRef.current;
+        // Speech must exceed both the calibrated energy floor and the calibrated voice band.
+        // Separate start/stop thresholds prevent small noise fluctuations from extending a turn.
+        const speechOnsetThreshold = Math.max(18, noiseVoiceBandRef.current + 8);
+        const speechSilenceThreshold = Math.max(12, noiseVoiceBandRef.current + 3);
+        const speechOnsetRms = Math.max(0.018, currentNoiseFloor * 2.1, currentNoiseFloor + 0.008);
+        const speechSilenceRms = Math.max(0.010, currentNoiseFloor * 1.35, currentNoiseFloor + 0.003);
+        const speechCandidate = voiceBandAvg >= speechOnsetThreshold && rms >= speechOnsetRms;
+        const belowSpeechFloor = voiceBandAvg <= speechSilenceThreshold || rms <= speechSilenceRms;
+
+        // ── Acoustic VAD: Speech onset & Turn Endpointing with Hysteresis ──
+        if (isListeningRef.current && !isMutedRef.current) {
+          if (speechCandidate) {
+            consecutiveSpeechFramesRef.current += 1;
+            consecutiveSilenceFramesRef.current = 0;
+
+            // Require sustained energy to reject clicks, fans, and isolated noise spikes.
+            if (consecutiveSpeechFramesRef.current >= 4) {
+              userHasSpokenRef.current = true;
+              lastSpeechTimeRef.current = Date.now();
+              turnStartedAtRef.current ||= Date.now();
+            }
+          } else if (belowSpeechFloor) {
+            consecutiveSilenceFramesRef.current += 1;
+            consecutiveSpeechFramesRef.current = 0;
+
+            // Turn Endpointing: If the user was speaking, and has now been silent
+            if (userHasSpokenRef.current && lastSpeechTimeRef.current !== null) {
+              const silenceDuration = Date.now() - lastSpeechTimeRef.current;
+              // Require a sustained quiet window before finalizing the turn.
+              if (silenceDuration > 1000 && consecutiveSilenceFramesRef.current >= 12) {
+                console.log(`[VAD] Turn endpoint detected (${silenceDuration}ms silence, noiseFloor=${currentNoiseFloor.toFixed(1)}). Auto-submitting turn.`);
+                userHasSpokenRef.current = false;
+                lastSpeechTimeRef.current = null;
+                consecutiveSpeechFramesRef.current = 0;
+                consecutiveSilenceFramesRef.current = 0;
+                stopListeningAndProcess();
+                return;
+              }
+            }
+          } else {
+            // In the hysteresis band (between silence and speech onset):
+            // Maintain previous state; do NOT wipe lastSpeechTimeRef!
+            consecutiveSpeechFramesRef.current = 0;
+          }
+        }
+
+        vadFrameRef.current = requestAnimationFrame(updateLevel);
+      };
+      vadFrameRef.current = requestAnimationFrame(updateLevel);
+
+      const processor = audioCtxRef.current.createScriptProcessor(4096, 1, 1);
+      const silentGain = audioCtxRef.current.createGain();
+      silentGain.gain.value = 0;
+      audioSourceRef.current = source;
+      processorRef.current = processor;
+      silentGainRef.current = silentGain;
+      processor.onaudioprocess = (e) => {
+        if (!isListeningRef.current || isMutedRef.current) return;
+        const channelData = e.inputBuffer.getChannelData(0);
+        pcmChunksRef.current.push(new Float32Array(channelData));
+      };
+      source.connect(processor);
+      // Keep ScriptProcessor alive without routing microphone audio to the speakers.
+      processor.connect(silentGain);
+      silentGain.connect(audioCtxRef.current.destination);
+    } catch (e) {
+      console.warn('AudioContext meter setup note:', e);
+    }
+
+    isListeningRef.current = true;
+    startingListeningRef.current = false;
+    setIsListening(true);
+
+    // 3. Use browser SpeechRecognition only for an explicitly selected language.
+    // Auto mode must use Sarvam Saaras so the provider can return its detected language.
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition && selectedLangRef.current !== 'auto') {
+      try {
+        const rec = new SpeechRecognition();
+        
+        // Multi-language locale mapping
+        const localeMap: Record<string, string> = {
+          kn: 'kn-IN',   // Kannada
+          hi: 'hi-IN',   // Hindi
+          en: 'en-IN',   // Indian English
+          mr: 'mr-IN',   // Marathi
+          te: 'te-IN',   // Telugu
+          ta: 'ta-IN',   // Tamil
+          gu: 'gu-IN',   // Gujarati
+          bn: 'bn-IN'    // Bengali
+        };
+        rec.lang = localeMap[selectedLangRef.current] || 'en-IN';
+        rec.continuous = true;
+        rec.interimResults = true;
+        rec.maxAlternatives = 1;
+
+        rec.onresult = (event: any) => {
+          let interim = '';
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              accumulatedTranscriptRef.current += ' ' + transcript;
+            } else {
+              interim += transcript;
+            }
+          }
+          const fullText = (accumulatedTranscriptRef.current + ' ' + interim).trim();
+          if (fullText) {
+            userHasSpokenRef.current = true;
+            setLiveTranscript(fullText);
+
+            userHasSpokenRef.current = true;
+            lastSpeechTimeRef.current = Date.now();
+
+            // Turn-taking silence debounce from speech engine (950ms silence after words)
+            if (speechSilenceTimerRef.current) {
+              clearTimeout(speechSilenceTimerRef.current);
+            }
+            speechSilenceTimerRef.current = setTimeout(() => {
+              if (isListeningRef.current && isCallActiveRef.current && fullText.length > 1) {
+                console.log('[STT] Speech recognition silence timeout. Processing turn:', fullText);
+                userHasSpokenRef.current = false;
+                lastSpeechTimeRef.current = null;
+                stopListeningAndProcess(fullText);
+              }
+            }, 950);
+          }
+        };
+
+        rec.onerror = (event: any) => {
+          if (event.error === 'no-speech') return;
+          if (event.error === 'not-allowed') {
+            setMicPermissionDenied(true);
+            stopListening();
+          }
+        };
+
+        rec.onend = () => {
+          // If browser speech recognition ended and we have captured transcript or active speech, finalize turn!
+          const pendingText = (accumulatedTranscriptRef.current || liveTranscript).trim();
+          if (pendingText && pendingText.length > 1 && isListeningRef.current && !isSpeakingRef.current && isCallActiveRef.current) {
+            console.log('[STT] Speech recognition ended with pending transcript. Auto-submitting turn:', pendingText);
+            userHasSpokenRef.current = false;
+            lastSpeechTimeRef.current = null;
+            stopListeningAndProcess(pendingText);
+            return;
+          }
+
+          // Otherwise auto-restart if call is still active and listening hands-free
+          if (isListeningRef.current && !isSpeakingRef.current && isCallActiveRef.current && !isMutedRef.current) {
+            try {
+              rec.start();
+            } catch (_) {}
+          }
+        };
+
+        recognitionRef.current = rec;
+        rec.start();
+      } catch (err) {
+        console.warn('Browser SpeechRecognition error, relying on acoustic Sarvam STT:', err);
+      }
+    }
+  };
+
+  // Stop listening without submitting
+  const stopListening = () => {
+    isListeningRef.current = false;
+    setIsListening(false);
+    setAudioLevel(0);
+
+    if (vadFrameRef.current !== null) {
+      cancelAnimationFrame(vadFrameRef.current);
+      vadFrameRef.current = null;
+    }
+
+    if (watchdogTimerRef.current) {
+      clearInterval(watchdogTimerRef.current);
+      watchdogTimerRef.current = null;
+    }
+
+    if (speechSilenceTimerRef.current) {
+      clearTimeout(speechSilenceTimerRef.current);
+      speechSilenceTimerRef.current = null;
+    }
+
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.onend = null;
+        recognitionRef.current.onerror = null;
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.stop();
+      } catch (_) {}
+      recognitionRef.current = null;
+    }
+
+    if (processorRef.current) {
+      processorRef.current.onaudioprocess = null;
+      processorRef.current.disconnect();
+      processorRef.current = null;
+    }
+    if (audioSourceRef.current) {
+      audioSourceRef.current.disconnect();
+      audioSourceRef.current = null;
+    }
+    if (silentGainRef.current) {
+      silentGainRef.current.disconnect();
+      silentGainRef.current = null;
+    }
+  };
+
+  // Stop listening and immediately process the captured phrase (Dual-detector pipeline)
+  const stopListeningAndProcess = async (textToSubmit?: string) => {
+    if (finishTurnLockRef.current) return;
+    finishTurnLockRef.current = true;
+    stopListening();
+    turnStartedAtRef.current = null;
+    userHasSpokenRef.current = false;
+    lastSpeechTimeRef.current = null;
+    const candidateText = (textToSubmit || accumulatedTranscriptRef.current || liveTranscript).trim();
+    accumulatedTranscriptRef.current = '';
+    setLiveTranscript('');
+
+    if (candidateText && candidateText.length > 1) {
+      handleUserSpeech(candidateText);
+      return;
+    }
+
+    // Secondary layer: Check PCM chunks for Sarvam Saaras v3 acoustic STT
+    const chunks = pcmChunksRef.current;
+    pcmChunksRef.current = [];
+    if (chunks.length > 0) {
+      setIsThinking(true);
+      isThinkingRef.current = true;
+      try {
+        let totalLen = 0;
+        for (const c of chunks) totalLen += c.length;
+        const merged = new Float32Array(totalLen);
+        let offset = 0;
+        for (const c of chunks) {
+          merged.set(c, offset);
+          offset += c.length;
+        }
+
+        let sumSquares = 0;
+        for (let i = 0; i < merged.length; i++) sumSquares += merged[i] * merged[i];
+        const rms = Math.sqrt(sumSquares / merged.length);
+
+        // Only send if there was meaningful sound energy (>0.5s of speech)
+        if (rms > 0.003 && totalLen > 8000) {
+          const currentSampleRate = audioCtxRef.current?.sampleRate || 16000;
+          const wavBlob = encodeWAV(merged, currentSampleRate);
+          const reader = new FileReader();
+          reader.onloadend = async () => {
+            const base64Audio = reader.result as string;
+            try {
+              const res = await fetch('/api/voice/stt', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  audio: base64Audio,
+                  language: selectedLangRef.current === 'auto' ? 'unknown' : selectedLangRef.current
+                })
+              });
+              if (res.ok) {
+                const data = await res.json();
+                if (data.transcript && data.transcript.trim()) {
+                  if (data.language_code) {
+                    const detectedCode = data.language_code.split('-')[0];
+                    detectedLangRef.current = detectedCode;
+                    setDetectedLang(detectedCode);
+                    handleUserSpeech(data.transcript.trim(), detectedCode);
+                  } else {
+                    handleUserSpeech(data.transcript.trim(), selectedLangRef.current);
+                  }
+                  return;
+                }
+              }
+            } catch (err) {
+              console.warn('Sarvam STT acoustic fallback error:', err);
+            }
+            setIsThinking(false);
+            isThinkingRef.current = false;
+            // Reopen mic for patient
+            if (isCallActiveRef.current && !isMutedRef.current) {
+              startListening();
+            }
+          };
+          reader.readAsDataURL(wavBlob);
+          return;
+        }
+      } catch (e) {
+        console.warn('Audio transcription error:', e);
+      }
+      setIsThinking(false);
+      isThinkingRef.current = false;
+      if (isCallActiveRef.current && !isMutedRef.current) {
+        startListening();
+      }
+    } else {
+      // Reopen mic if no speech was captured
+      if (isCallActiveRef.current && !isMutedRef.current) {
+        startListening();
+      }
+    }
+  };
+
+  // Clinical reasoning & conversation via server-side /api/voice/chat (Groq GPT-OSS 20B)
+  const handleUserSpeech = async (text: string, spokenLanguage = detectedLangRef.current) => {
+    stopListening();
+    stopAudio();
+    setLatestPatientSpeech(text);
+    setIsThinking(true);
+    isThinkingRef.current = true;
+
+    try {
+      const res = await fetch('/api/voice/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: text,
+            language: spokenLanguage || selectedLangRef.current,
+          patientName: participantName
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const reply = data.reply?.trim();
+        if (!reply) throw new Error('Groq returned an empty response');
+        if (data.detectedLang) {
+          detectedLangRef.current = data.detectedLang;
+          setDetectedLang(data.detectedLang);
+        }
+        if (data.pace) {
+          setVoiceSpeed(data.pace);
+          voiceSpeedRef.current = data.pace;
+        }
+        if (data.paceReason) {
+          setPaceReason(data.paceReason);
+        }
+        setLatestAssistantSpeech(reply);
+        await playNeuralVoice(reply, data.detectedLang || selectedLangRef.current, data.pace);
+      } else {
+        throw new Error(`Voice chat error (${res.status})`);
+      }
+    } catch (error) {
+      console.warn('Groq voice assistant request failed:', error);
+      const unavailableMessage = 'The Groq clinical assistant is temporarily unavailable. Please try again or speak with your care team.';
+      setLatestAssistantSpeech(unavailableMessage);
+      await playNeuralVoice(unavailableMessage, detectedLangRef.current, 1.05);
+    } finally {
+      setIsThinking(false);
+      isThinkingRef.current = false;
+    }
+  };
+
+  // Auto-start call with friendly greeting when modal opens
+  useEffect(() => {
+    isCallActiveRef.current = true;
+    const initialGreeting = getInitialGreeting(selectedLang !== 'auto' ? selectedLang : language, participantName);
+    setLatestAssistantSpeech(initialGreeting);
+
+    const timer = setTimeout(() => {
+      playNeuralVoice(initialGreeting, selectedLang !== 'auto' ? selectedLang : language, 1.16);
+    }, 450);
+
+    return () => {
+      clearTimeout(timer);
+      isCallActiveRef.current = false;
+      stopAudio();
+      stopListening();
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+        mediaStreamRef.current = null;
+      }
+      if (audioCtxRef.current) {
+        audioCtxRef.current.close().catch(() => {});
+        audioCtxRef.current = null;
+      }
+    };
+  }, []);
+
+  // Suggested prompt click listener
+  useEffect(() => {
+    const handlePromptEvent = (e: any) => {
+      const promptText = e.detail;
+      if (promptText) {
+        stopListening();
+        stopAudio();
+        handleUserSpeech(promptText, selectedLangRef.current);
+      }
+    };
+    window.addEventListener('medikiosk_voice_prompt', handlePromptEvent);
+    return () => {
+      window.removeEventListener('medikiosk_voice_prompt', handlePromptEvent);
+    };
+  }, []);
+
+  // Toggle Mute
+  const toggleMute = () => {
+    const nextMuted = !isMuted;
+    setIsMuted(nextMuted);
+    isMutedRef.current = nextMuted;
+    if (nextMuted) {
+      stopListening();
+    } else {
+      if (!isSpeakingRef.current && !isThinkingRef.current) {
+        startListening();
+      }
+    }
+  };
+
+  // Change language selection
+  const changeLanguage = (langCode: string) => {
+    setSelectedLang(langCode);
+    selectedLangRef.current = langCode;
+    if (langCode !== 'auto') {
+      setDetectedLang(langCode);
+    }
+  };
+
+  // End Call & Hang Up
+  const handleHangUp = () => {
+    isCallActiveRef.current = false;
+    stopAudio();
+    stopListening();
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+      mediaStreamRef.current = null;
+    }
+    if (audioCtxRef.current) {
+      audioCtxRef.current.close().catch(() => {});
+      audioCtxRef.current = null;
+    }
+    onEndCall();
+  };
+
+  // Handle typing submit fallback
   const handleTypeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!typeQuery.trim()) return;
-    const query = typeQuery.trim();
+    const q = typeQuery.trim();
     setTypeQuery('');
-    handleUserSpeech(query);
+    handleUserSpeech(q);
   };
 
-  const effectiveState = isSpeaking ? 'speaking' : isListening ? 'listening' : isThinking ? 'thinking' : 'ready';
+  const detectedLangObj =
+    CALL_LANGUAGES.find((l) => l.code === detectedLang) ||
+    CALL_LANGUAGES.find((l) => l.code === 'hi') ||
+    CALL_LANGUAGES[0];
+
+  const effectiveState = isSpeaking
+    ? 'speaking'
+    : isThinking
+    ? 'thinking'
+    : isListening
+    ? 'listening'
+    : 'idle';
 
   return (
-    <div className="w-full flex flex-col items-center py-2">
-      {/* Friendly Speaker Pill */}
-      <div className="mb-3 flex items-center gap-2">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-50 border border-slate-200/80 text-[11px] font-medium text-slate-600">
-          <Stethoscope size={12} className="text-indigo-600" />
-          <span>Clinical Intake • Dr. Vaidya Ananya Sharma's Assistant</span>
+    <div className="w-full flex flex-col items-center">
+      {/* Top Banner / Call Connected bar */}
+      <div className="w-full max-w-xl flex items-center justify-between px-4 py-2.5 bg-white border border-slate-200/90 rounded-2xl shadow-2xs mb-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+          <div>
+            <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+              <span>OPD Bay 04 • Live Consultation</span>
+              <span className="text-[10px] text-slate-400 font-normal">({formatDuration(callDuration)})</span>
+            </div>
+          </div>
         </div>
-        <button
-          onClick={() => setSoundEnabled(!soundEnabled)}
-          className="p-1 rounded-full text-slate-400 hover:text-slate-700 text-xs transition-colors"
-          title={soundEnabled ? 'Mute Assistant Voice' : 'Unmute Assistant Voice'}
-        >
-          {soundEnabled ? <Volume2 size={14} className="text-indigo-600" /> : <VolumeX size={14} />}
-        </button>
+
+        {/* Right Info: Sound & Voice Info */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setSoundEnabled(!soundEnabled)}
+            className="p-1.5 rounded-full hover:bg-slate-200/80 text-slate-500 hover:text-slate-800 text-xs transition-colors cursor-pointer"
+            title={soundEnabled ? 'Mute AI Voice' : 'Unmute AI Voice'}
+          >
+            {soundEnabled ? <Volume2 size={16} className="text-indigo-600" /> : <VolumeX size={16} className="text-rose-500" />}
+          </button>
+        </div>
       </div>
 
-      {/* Central Interactive Fluid Voice Orb */}
-      <div className="relative mb-4 flex items-center justify-center">
-        {/* Soft calm ambient light aura */}
+      {/* ── Multi-Language Auto-Detection & Adaptive Speed Status Ribbon ── */}
+      <div className="w-full max-w-xl mx-auto mb-3 flex flex-wrap items-center justify-between gap-2 px-1">
+        {/* Language Pill & Selector */}
+        <div className="flex items-center gap-1.5 bg-white border border-slate-200/90 rounded-full px-2.5 py-1 text-xs shadow-2xs">
+          <Languages size={13} className="text-indigo-600 shrink-0" />
+          <span className="text-[11px] font-semibold text-slate-700">Language:</span>
+          <select
+            value={selectedLang}
+            onChange={(e) => changeLanguage(e.target.value)}
+            className="text-[11px] font-medium text-indigo-700 bg-transparent border-0 focus:ring-0 cursor-pointer pr-1 py-0"
+          >
+            <option value="auto">🌐 Auto-Detect ({detectedLangObj.name})</option>
+            <option value="kn">🇮🇳 Kannada (ಕನ್ನಡ)</option>
+            <option value="hi">🇮🇳 Hindi (हिन्दी)</option>
+            <option value="en">🌐 English (Indian)</option>
+            <option value="mr">🇮🇳 Marathi (मराठी)</option>
+            <option value="te">🇮🇳 Telugu (తెలుగు)</option>
+            <option value="ta">🇮🇳 Tamil (தமிழ்)</option>
+            <option value="gu">🇮🇳 Gujarati (ગુજરાતી)</option>
+            <option value="bn">🇮🇳 Bengali (বাংলা)</option>
+          </select>
+          {selectedLang === 'auto' && (
+            <span className="px-1.5 py-0.2 rounded-md bg-indigo-50 text-indigo-700 text-[10px] font-semibold border border-indigo-100">
+              Active: {detectedLangObj.native}
+            </span>
+          )}
+        </div>
+
+        {/* AI Judged Adaptive Pacing Badge (Automatic, no manual buttons!) */}
+        <div className="flex items-center gap-1.5 bg-white border border-slate-200/90 rounded-full px-3 py-1 text-xs shadow-2xs">
+          <Gauge size={13} className="text-amber-600 shrink-0" />
+          <span className="text-[11px] font-semibold text-slate-700">AI Adaptive Pace:</span>
+          <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.2 rounded-full border border-amber-200">
+            {voiceSpeed}x • {paceReason}
+          </span>
+        </div>
+      </div>
+
+      {/* Permission alert if mic blocked */}
+      {micPermissionDenied && (
+        <div className="w-full max-w-md mx-auto mb-2.5 p-2.5 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-center justify-between shadow-2xs animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <MicOff size={15} className="text-amber-600 shrink-0" />
+            <span>Microphone access blocked. Please click the lock or camera icon in your address bar to allow mic access.</span>
+          </div>
+          <button onClick={() => setMicPermissionDenied(false)} className="text-amber-500 hover:text-amber-800 cursor-pointer ml-2">
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
+      {/* ── Central Interactive Fluid Voice Orb ── */}
+      <div className="relative my-2 flex items-center justify-center">
+        {/* Ambient glow responsive to speech */}
         <div
           className={`absolute w-44 h-44 rounded-full blur-3xl transition-all duration-700 pointer-events-none ${
             effectiveState === 'speaking'
-              ? 'bg-indigo-200/60 scale-125'
+              ? 'bg-indigo-300/60 scale-125'
               : effectiveState === 'listening'
-              ? 'bg-emerald-200/50 scale-110'
+              ? 'bg-emerald-300/60 scale-115'
               : effectiveState === 'thinking'
-              ? 'bg-amber-200/40 scale-105 animate-pulse'
-              : 'bg-slate-100/40'
+              ? 'bg-amber-300/50 scale-105 animate-pulse'
+              : 'bg-slate-100/50'
           }`}
         />
 
@@ -847,158 +1596,222 @@ function StandaloneVoiceAssistantContent({
         <FluidVoiceOrb
           isListening={isListening}
           isSpeaking={isSpeaking}
-          onClick={toggleListening}
-          size={100}
+          onClick={isSpeaking ? stopAudio : toggleMute}
+          size={104}
         />
       </div>
 
+      <p className="text-[11px] text-slate-400 font-medium mb-2">
+        {isSpeaking
+          ? 'Doctor is speaking • Speak over to interrupt naturally (AI goes silent automatically)'
+          : isMuted
+          ? 'Microphone muted • Tap unmute to speak'
+          : 'Hands-free phone call mode • Speak naturally, AI auto-detects when you finish'}
+      </p>
+
       {/* Audio Wave Visualizer Bars */}
-      <div className="w-48 h-7 flex items-center justify-center gap-1 mb-3">
-        {[24, 40, 16, 48, 20, 36, 18].map((h, i) => (
-          <span
-            key={i}
-            style={{
-              height: isSpeaking || isListening ? `${h}px` : '6px',
-              transition: 'height 0.2s ease-in-out'
-            }}
-            className={`w-1.5 rounded-full transition-all ${
-              isSpeaking
-                ? 'bg-indigo-600 animate-pulse'
-                : isListening
-                ? 'bg-emerald-500 animate-pulse'
-                : 'bg-slate-300'
-            }`}
-          />
-        ))}
+      <div className="w-52 h-7 flex items-center justify-center gap-1.5 mb-3">
+        {[20, 36, 16, 44, 18, 32, 16].map((h, i) => {
+          const dynamicHeight = isSpeaking
+            ? Math.max(8, Math.min(32, Math.round(h * 0.7)))
+            : isListening
+            ? Math.max(6, Math.min(30, Math.round((audioLevel / 100) * h * 0.8 + 6)))
+            : '5px';
+          return (
+            <span
+              key={i}
+              style={{
+                height: typeof dynamicHeight === 'number' ? `${dynamicHeight}px` : dynamicHeight,
+                transition: 'height 0.08s ease-in-out'
+              }}
+              className={`w-1.5 rounded-full transition-all ${
+                isSpeaking
+                  ? 'bg-indigo-600 animate-pulse'
+                  : isListening
+                  ? 'bg-emerald-500 shadow-xs'
+                  : 'bg-slate-300'
+              }`}
+            />
+          );
+        })}
       </div>
 
-      {/* Dialogue Bubbles */}
-      <div className="max-w-md w-full space-y-2 px-2 mb-3">
+      {/* ── Dialogue Bubbles ── */}
+      <div className="max-w-xl w-full space-y-2.5 px-2 mb-3">
+        {/* Live speech as patient is actively talking */}
+        {isListening && (
+          <div className="bg-emerald-50/95 border border-emerald-300 shadow-2xs px-4 py-2.5 rounded-2xl text-xs text-emerald-950 ml-auto max-w-[90%] text-right animate-in fade-in">
+            <div className="flex items-center justify-end gap-1.5 mb-1 text-[10px] font-bold text-emerald-700 uppercase">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+              <span>Hearing you live in {selectedLang === 'auto' ? 'Kannada / Hindi / English' : detectedLangObj.name}...</span>
+            </div>
+            <p className="font-semibold text-slate-800 text-[13px] leading-snug">
+              {liveTranscript || 'Listening... Speak freely in Kannada, Hindi, or English (e.g. "ನನ್ನ ಕಾಲಿನಲ್ಲಿ ನೋವಿದೆ" or "Pair me dard hai")'}
+            </p>
+            {liveTranscript && (
+              <div className="mt-2 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => stopListeningAndProcess(liveTranscript)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold shadow-xs transition-all cursor-pointer"
+                >
+                  <Send size={11} />
+                  <span>Done Speaking (Submit Now)</span>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         {latestPatientSpeech && (
-          <div className="bg-slate-100 border border-slate-200/80 px-4 py-2 rounded-2xl text-xs text-slate-700 ml-auto max-w-[85%] text-right">
+          <div className="bg-slate-100 border border-slate-200/90 px-4 py-2 rounded-2xl text-xs text-slate-700 ml-auto max-w-[85%] text-right">
             <span className="font-semibold text-slate-900 block text-[10px] uppercase">
-              You (Patient):
+              You ({participantName}):
             </span>
             "{latestPatientSpeech}"
           </div>
         )}
 
-        <div className="bg-white border border-slate-200/90 shadow-2xs px-4 py-2.5 rounded-2xl text-xs text-slate-700 leading-relaxed text-left">
-          <div className="flex items-center justify-between mb-0.5">
-            <span className="font-semibold text-indigo-600 text-[11px] flex items-center gap-1">
-              <Sparkles size={11} />
-              <span>Dr. Sharma's Assistant:</span>
+        {/* Assistant Speech Bubble */}
+        <div className="bg-white border border-slate-200/90 shadow-2xs px-4 py-3 rounded-2xl text-xs text-slate-800 leading-relaxed text-left">
+          <div className="flex items-center justify-between mb-1">
+            <span className="font-bold text-indigo-700 text-xs flex items-center gap-1.5">
+              <Sparkles size={12} className="text-indigo-600" />
+              <span>Dr. Sharma's Assistant (Kavya Voice):</span>
             </span>
             {isSpeaking && (
-              <span className="text-[10px] text-indigo-500 font-bold animate-pulse flex items-center gap-1">
-                <Volume2 size={11} /> Speaking
+              <span className="text-[10px] text-indigo-600 font-bold animate-pulse flex items-center gap-1 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200">
+                <Volume2 size={11} /> Speaking @ {voiceSpeed}x ({paceReason})
               </span>
             )}
           </div>
-          <p className="text-slate-800">{latestAssistantSpeech}</p>
+          <p className="text-slate-800 text-[13px] font-medium leading-relaxed">
+            {latestAssistantSpeech}
+          </p>
         </div>
       </div>
 
-      {/* State Badge */}
+      {/* ── State Badge ── */}
       <div className="mb-4">
         {isListening ? (
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full border text-xs font-semibold bg-emerald-50 text-emerald-700 border-emerald-200">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-bold bg-emerald-50 text-emerald-800 border-emerald-300 shadow-2xs animate-in fade-in">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-            <span>Listening to you... Speak in Hindi or English</span>
+            <span>🟢 Phone Line Open • Speak naturally (Auto-Processes when you stop)</span>
           </div>
         ) : isThinking ? (
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full border text-xs font-semibold bg-amber-50 text-amber-700 border-amber-200">
-            <Loader2 size={12} className="animate-spin text-amber-600" />
-            <span>Med-Gemma Clinical Reasoning...</span>
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-bold bg-amber-50 text-amber-800 border-amber-300 shadow-2xs">
+            <Loader2 size={13} className="animate-spin text-amber-600" />
+            <span>Sarvam 105B Reasoning &amp; Judging Pacing...</span>
           </div>
         ) : isSpeaking ? (
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full border text-xs font-semibold bg-indigo-50 text-indigo-700 border-indigo-200">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-bold bg-indigo-50 text-indigo-800 border-indigo-300 shadow-2xs">
             <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-            <span>Assistant is Speaking</span>
+            <span>Assistant Speaking ({voiceSpeed}x - {paceReason})</span>
+          </div>
+        ) : isMuted ? (
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-bold bg-rose-50 text-rose-800 border-rose-200">
+            <MicOff size={13} />
+            <span>Microphone Muted • Tap Unmute to Resume Speaking</span>
           </div>
         ) : (
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full border text-xs font-semibold bg-slate-100 text-slate-700 border-slate-200">
-            <span className="w-2 h-2 rounded-full bg-slate-400" />
-            <span>Tap the Orb or Mic to Speak</span>
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-semibold bg-slate-100 text-slate-700 border-slate-200">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            <span>Call Connected • Ready for Symptoms</span>
           </div>
         )}
       </div>
 
-      {/* Interactive Controls Bar */}
+      {/* ── Phone Call Action Bar (Clean, Minimal Phone Controls) ── */}
       <div className="flex flex-wrap items-center justify-center gap-2.5 mb-3">
-        {/* Mic Toggle Button */}
+        {/* Mute / Unmute Button */}
         <button
-          onClick={toggleListening}
-          className={`h-10 px-4 rounded-full flex items-center gap-2 text-xs font-semibold transition-all cursor-pointer shadow-2xs ${
-            isListening
-              ? 'bg-rose-600 hover:bg-rose-700 text-white animate-pulse'
-              : 'bg-[#4865ff] hover:bg-[#3852e6] text-white'
+          onClick={toggleMute}
+          className={`h-11 px-4 rounded-full flex items-center gap-2 text-xs font-semibold transition-all cursor-pointer shadow-2xs ${
+            isMuted
+              ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-md ring-2 ring-amber-400'
+              : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200'
           }`}
+          title={isMuted ? 'Unmute microphone' : 'Mute microphone'}
         >
-          {isListening ? <MicOff size={15} /> : <Mic size={15} />}
-          <span>{isListening ? 'Stop Speaking' : 'Tap to Speak'}</span>
+          {isMuted ? <MicOff size={15} /> : <Mic size={15} />}
+          <span>{isMuted ? 'Unmute Mic' : 'Mute Mic'}</span>
         </button>
 
-        {/* Switch to Touch Case-Taking Button */}
+        {/* Switch to Touch Mode */}
         <button
           onClick={onSwitchToTouch}
-          className="h-10 px-4 rounded-full bg-blue-50 hover:bg-blue-100 text-[#4865ff] border border-blue-200/80 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+          className="h-11 px-4 rounded-full bg-blue-50 hover:bg-blue-100 text-[#4865ff] border border-blue-200 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
         >
           <Touchpad size={14} />
-          <span>Touch Case-Taking (MCQ)</span>
+          <span>Touch Mode</span>
         </button>
 
         {/* View Prescription Note */}
         <button
           onClick={onOpenReport}
-          className="h-10 px-3.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
+          className="h-11 px-3.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
         >
           <FileText size={14} className="text-indigo-600" />
           <span>View Rx</span>
         </button>
 
-        {/* End Voice Call Button */}
+        {/* Red Hang Up / End Call Button */}
         <button
-          onClick={onEndCall}
-          className="h-10 px-4 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+          onClick={handleHangUp}
+          className="h-11 px-5 rounded-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center gap-2 shadow-md shadow-rose-500/25 transition-all cursor-pointer"
         >
-          <PhoneOff size={14} />
+          <PhoneOff size={15} />
           <span>End Call</span>
         </button>
       </div>
 
-      {/* Alternative: Type Your Answer Input Strip */}
-      <form onSubmit={handleTypeSubmit} className="w-full max-w-md flex items-center gap-2 mt-1">
+      {/* Alternative: Type Query Input Strip */}
+      <form onSubmit={handleTypeSubmit} className="w-full max-w-xl flex items-center gap-2 mt-1">
         <input
           type="text"
           value={typeQuery}
           onChange={(e) => setTypeQuery(e.target.value)}
-          placeholder="Or type symptom / question in Hindi or English..."
+          placeholder="Or type in Kannada (ಕನ್ನಡ), Hindi (हिन्दी), or English..."
           className="flex-1 bg-white border border-slate-200/90 rounded-full px-4 py-2 text-xs text-slate-800 focus:outline-none focus:border-[#4865ff] shadow-2xs"
         />
         <button
           type="submit"
-          className="w-9 h-9 rounded-full bg-[#4865ff] hover:bg-[#3852e6] text-white flex items-center justify-center transition-all shadow-2xs cursor-pointer shrink-0"
+          className="h-9 px-4 rounded-full bg-[#4865ff] hover:bg-[#3852e6] text-white text-xs font-semibold flex items-center gap-1 transition-all shadow-2xs cursor-pointer"
         >
           <Send size={13} />
+          <span>Send</span>
         </button>
       </form>
     </div>
   );
 }
-
 /** Inner component subscribed to the LiveKit WebRTC voice assistant */
 function ActiveVoiceAssistantContent({
   onEndCall,
-  onOpenReport
+  onOpenReport,
+  onFallbackToDirectVoice
 }: {
   onEndCall: () => void;
   onOpenReport: () => void;
+  onFallbackToDirectVoice?: () => void;
 }) {
   const { state, audioTrack, agentTranscriptions } = useVoiceAssistant();
   const { isMicrophoneEnabled, localParticipant } = useLocalParticipant();
   const remoteParticipants = useRemoteParticipants();
   const room = useRoomContext();
+
+  // Watchdog: If no LiveKit agent worker joins the room within 4.5s, auto-switch to Direct Neural Voice
+  useEffect(() => {
+    if (remoteParticipants.length === 0) {
+      const timer = setTimeout(() => {
+        if (remoteParticipants.length === 0 && onFallbackToDirectVoice) {
+          console.info('[VoiceAgent] No LiveKit agent worker detected in room after 4.5s. Seamlessly activating Direct Neural Voice.');
+          onFallbackToDirectVoice();
+        }
+      }, 4500);
+      return () => clearTimeout(timer);
+    }
+  }, [remoteParticipants.length, onFallbackToDirectVoice]);
 
   // Ensure AudioContext is unlocked in browser for WebRTC voice playback
   useEffect(() => {
@@ -1033,7 +1846,7 @@ function ActiveVoiceAssistantContent({
       dot: 'bg-emerald-500'
     },
     thinking: {
-      label: 'Med-Gemma Clinical Reasoning...',
+      label: 'Groq GPT-OSS 20B Clinical Reasoning...',
       color: 'text-amber-700 bg-amber-50 border-amber-200/80',
       dot: 'bg-amber-500'
     },

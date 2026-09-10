@@ -2,13 +2,15 @@ import { Agent, dedent, tool } from '@livekit/agents';
 import { LLM as OpenAILLM } from '@livekit/agents-plugin-openai';
 import { z } from 'zod';
 
-const SARVAM_API_KEY = process.env.SARVAM_API_KEY || 'sk_k78xw4hw_AIq2FZ8NytX15FVxcXIdVHcU';
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
 export function createMediKioskAgent() {
-  const sarvamLLM = new OpenAILLM({
-    model: 'sarvam-105b-conversations',
-    baseURL: 'https://api.sarvam.ai/v1',
-    apiKey: SARVAM_API_KEY,
+  if (!GROQ_API_KEY) throw new Error('GROQ_API_KEY is not configured');
+
+  const groqLLM = new OpenAILLM({
+    model: 'openai/gpt-oss-20b',
+    baseURL: 'https://api.groq.com/openai/v1',
+    apiKey: GROQ_API_KEY,
   });
 
   return Agent.create({
@@ -36,16 +38,17 @@ export function createMediKioskAgent() {
       5. Ask about his fasting sugar check and confirm he is wearing offloading footwear without walking barefoot.
       Once he shares this information, call the 'generateDoctorPrescriptionReport' tool to file the intake report with Dr. Vaidya Ananya Sharma at Bay 04.
 
-      # Spoken Voice Rules (Ultra-Low Latency & High Warmth):
+      # Spoken Voice Rules (Ultra-Low Latency, Multilingual & High Warmth):
       - Keep every response SHORT: 1 to 2 sentences maximum! Never speak long paragraphs.
       - Ask only ONE clinical question at a time.
-      - Speak in plain, warm, conversational Hindi, Hinglish, or English matching the patient's language.
+      - Speak in plain, warm, natural conversational Kannada (ಕನ್ನಡ), Hindi (हिन्दी), or English matching the patient's spoken language. If the patient speaks Kannada, reply in Kannada. If Hindi, reply in Hindi. If English, reply in English.
+      - Adaptive Clinical Pacing: For acute symptoms or urgent alerts, communicate concisely and briskly. For medication dosages and Triphala/Jatyadi dressing steps, speak with extra clarity.
       - Never use markdown, asterisks (*), hashtags (#), bullet points, tables, code, or emojis in your speech output.
       - Reassure the patient warmly that Dr. Vaidya Ananya Sharma is monitoring his progress at Bay 04.
       - If he reports sudden severe pain, fever, spreading redness, or foul pus, immediately advise him that an emergency alert is triggered for Bay 04.
     `,
 
-    llm: sarvamLLM,
+    llm: groqLLM,
 
     tools: [
       tool({
